@@ -12,12 +12,13 @@ print("\nHosting Successful.")
 
 print("\nCreating monitor interface...")
 monitor = peripheral.find("monitor");
-monitor.setBackgroundColor(colors.white)
-monitor.setTextColor(colors.black)
+monitor.setBackgroundColor(colors.black)
+monitor.setTextColor(colors.white)
 monitor.clear();
 mwidth, mheight = monitor.getSize();
 resolution = mwidth*mheight;
-marginW = (mwidth / 2) / 3;
+monitor.setTextScale(1)
+marginW = (mwidth / 20);
 marginH = (mheight / 2) / 3;
 print("\nMonitor online.")
 
@@ -25,24 +26,26 @@ print("\nSauron boot sequence complete. Running primary script...")
 
 exit = false;
 repeat
-    local recID, message = rednet.receive(protocol, 5);
-    --default message structure: "type - programname.lua - message - time sent -"
+    local recID, message = rednet.receive(protocol, 1);
+    --default message structure: "type-programname.lua-message-time sent-"
     if (recID ~= nil) then
-        message = string.gsub(message, '-', " Turtle (running \"");
-        message = string.gsub(message, '-', "\"): ");
-        message = string.gsub(message, '-', "(Sent ");
-        message = string.gsub(message, '-', ")");
+        message = string.gsub(message, '-', " Turtle (running \"", 1);
+        message = string.gsub(message, '-', "\"): ", 1);
+        message = string.gsub(message, '-', " (Sent ", 1);
+        message = string.gsub(message, '-', ")", 1);
         message = "(ID " .. recID .. ") " .. message;
-        monitor.setCursor(marginW, (marginH+1))
+        monitor.setCursorPos(marginW, (marginH+1))
         monitor.clearLine()
         monitor.write(message)
+        print(message)
         
         if (string.match(message, "sauronmine.lua")) then
             rednet.broadcast(message, "mining")
         end
     end
-    monitor.setCursor(1,1)
-    monitor.write(textutils.formatTime(os.time()))
 
+    monitor.setCursorPos(1,1)
+    monitor.clearLine()
+    monitor.write(textutils.formatTime(os.time()))
 
 until (exit);

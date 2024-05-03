@@ -22,7 +22,7 @@ if (peripheral.find("modem")) then
     hasModem = true;
     print("\nWireless modem found. Opening...")
     message = ("Mining broadcast starting " .. textutils.formatTime(os.time()))
-    rednet.broadcast(message, "mining")
+    rednet.broadcast(message, "sauron")
 else
     hasModem = false;
     print("\nNo wireless modem found.")
@@ -42,7 +42,7 @@ repeat --whole script
             turtle.refuel()
             refuelCount = refuelCount+1;
             if (refuelCount > 100) then
-                if (hasModem) then rednet.broadcast("Error(fuel needed), mining paused! " .. textutils.formatTime(os.time()), "mining") end
+                if (hasModem) then rednet.broadcast("Error(fuel needed), mining paused! " .. textutils.formatTime(os.time()), "sauron") end
                 sleep(10)
             end
         until (turtle.getFuelLevel() >= ((fuelNeed*4)/Depth)); --turtle will not proceed until fuel is provided
@@ -50,7 +50,7 @@ repeat --whole script
 
     if (turtle.getItemSpace(16) < 64) then
         repeat
-            if (hasModem) then rednet.broadcast("Error(full inventory), mining paused! " .. textutils.formatTime(os.time()), "mining") end
+            if (hasModem) then rednet.broadcast("Error(full inventory), mining paused! " .. textutils.formatTime(os.time()), "sauron") end
             sleep(5)
         until (turtle.getItemSpace(16) == 64);
     end
@@ -93,4 +93,4 @@ repeat --whole script
 until (trackerD >= Depth);
 
 print("\nMining completed!")
-if (hasModem) then rednet.broadcast("Event(mining complete), mining completed! " .. textutils.formatTime(os.time()), "mining") end
+if (hasModem) then rednet.broadcast("Event(mining complete), mining completed! " .. textutils.formatTime(os.time()), "sauron") end
