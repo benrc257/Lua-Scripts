@@ -160,12 +160,14 @@ repeat
 
     
     for i=1, coords[5] do -- {"coords", x, y, z, depth, length, width}
+        refuel(x, y, z)
         for j=1, coords[6] do
-            for k=1, coords[7] do
+            for k=2, coords[7] do
                 face(facing, 3)
                 fillLiquid()
                 turtle.dig()
                 turtle.forward()
+                z=z+1;
             end -- left off here length and depth need to be done
         end
     end
