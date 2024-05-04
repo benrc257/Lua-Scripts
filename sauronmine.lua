@@ -111,29 +111,46 @@ currentWidth = 1;
 repeat
     local freeSlot = 0;
     repeat
-        local id, message = rednet.receive(protocol, 1)
-        if (id ~= nil and message == "free") then -- send free as string when done mining !!!
-            for i=1, turtleTotal do
-                if (turtles[i] == id) then
-                    turtlesFree[i] = 1;
-                    break;
-                end
-            end
-        end
-        
         for i=1, turtleTotal do
             if (turtlesFree[i] == 1) then
                 freeSlot = i;
                 break;
-            end
+            else freeslot = 0;
+        end
+
+        if (freeslot == 0) then
+            repeat
+                local free = false;
+                local id, message = rednet.receive(protocol, 10)
+                if (id ~= nil and message == "free") then -- send free as string when done mining !!!
+                    for i=1, turtleTotal do
+                        if (turtles[i] == id) then
+                            turtlesFree[i] = 1;
+                            freed = true;
+                            break;
+                        end
+                    end
+                end
+            until (freed)
         end
     until (freeSlot > 0);
     
-    local message = [] -- {x, y, z, depth}
+    local message = [] -- {"coords", x, y, z, depth, length, width}
+    message[1] == "coords";
     table.insert(message, corner[currentLength])
     table.insert(message, originY)
     table.insert(message, corner[currentLength][currentWidth])
     table.insert(message, depth)
+    if (currentLength == chunkLength and length%16) then
+        table.insert(message, length%16)
+    else
+        table.insert(message, 16)
+    end
+    if (currentWidth == chunkWidth and width%16) then
+        table.insert(message, width%16)
+    else
+        table.insert(message, 16)
+    end
     rednet.send(turtles[freeSlot], message, protocol)
 
     call(monitor, "paintutils.drawFilledBox", (mwidth-(mwidth*.85)), ((mheight/2)-(mheight*.1)), (mwidth*((.85)-(mwidth*(.85*(chunksComplete/chunks))))), ((mheight/2)-(mheight*.3)), colors.red)
@@ -153,6 +170,8 @@ monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
 monitor.setBackgroundColour(colors.black)
 monitor.clearLine()
 monitor.write("Complete!")
+
+rednet.broadcast("end", protocol);
 
 
     
