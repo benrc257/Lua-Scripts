@@ -78,6 +78,12 @@ else
     originX = x2;
 end
 
+if (y1 > y2) then
+    originY = y1;
+else
+    originY = y2;
+end
+
 if (z1 < z2) then
     originZ = z1;
 else
@@ -123,13 +129,24 @@ repeat
         end
     until (freeSlot > 0);
     
-    local message = []
+    local message = [] -- {x, y, z, depth}
     table.insert(message, corner[currentLength])
+    table.insert(message, originY)
     table.insert(message, corner[currentLength][currentWidth])
+    table.insert(message, depth)
     rednet.send(turtles[freeSlot], message, protocol)
 
     call(monitor, "paintutils.drawFilledBox", (mwidth-(mwidth*.85)), ((mheight/2)-(mheight*.1)), (mwidth*((.85)-(mwidth*(.85*(chunksComplete/chunks))))), ((mheight/2)-(mheight*.3)), colors.red)
 
+    if (currentWidth < chunkWidth) then
+        currentWidth = currentWidth+1;
+    else
+        currentWidth = 1;
+        currentLength = currentLength+1;
+    end
+
+    chunksComplete = chunksComplete+1;
+    
 until (chunksComplete >= chunks);
 
 monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
