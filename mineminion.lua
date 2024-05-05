@@ -2,7 +2,6 @@ modem = peripheral.find("modem", rednet.open);
 print("\nWireless modem found. Opening...")
 
 protocol = "mining";
-ID = os.computerID();
 
 function triangulate()
     repeat

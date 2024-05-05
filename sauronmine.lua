@@ -3,7 +3,6 @@ print("\nWireless modem found. Opening...")
 
 protocol = "mining";
 label = "gemstone";
-ID = os.computerID();
 os.setComputerLabel(label)
 print("\nComputer Label (\"gemstone\") successfully set and broadcasted. Hosting mining rednet...")
 rednet.host(protocol, label)
