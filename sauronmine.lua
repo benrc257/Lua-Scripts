@@ -5,7 +5,6 @@ protocol = "mining";
 label = "gemstone";
 ID = os.computerID();
 os.setComputerLabel(label)
-rednet.broadcast(label, protocol)
 print("\nComputer Label (\"gemstone\") successfully set and broadcasted. Hosting mining rednet...")
 rednet.host(protocol, label)
 print("\nHosting Successful.")
@@ -31,7 +30,7 @@ repeat
     local searchID = rednet.lookup(protocol, ("" .. turtleTotal));
     turtleTotal = turtleTotal+1;
     table.insert(turtles, searchID)
-until (searchID = nil)
+until (searchID ~= nil)
 turtlesFree = [];
 for i=1, turtleTotal do 
     table.insert(turtles, 1)
@@ -52,6 +51,27 @@ print("\nEnter the second Y coordinate: ")
 y2 = read();
 print("\nEnter the second Z coordinate: ")
 z2 = read();
+
+tesseract = [];
+print("\nRequesting teserract coordinates...")
+print("\nEnter the teserract X coordinate: ")
+tesseract[1] = read();
+print("\nEnter the teserract Y coordinate: ")
+tesseract[2] = read();
+print("\nEnter the teserract Z coordinate: ")
+tesseract[3] = read();
+
+storage = [];
+print("\nRequesting fuel storage coordinates...")
+print("\nEnter the fuel storage X coordinate: ")
+storage[1] = read();
+print("\nEnter the fuel storage Y coordinate: ")
+storage[2] = read();
+print("\nEnter the fuel storage Z coordinate: ")
+storage[3] = read();
+
+multishell.launch({},"fuel.lua", storage);
+multishell.launch({},"inv.lua", tesseract);
 
 print("\nPartioning...")
 length = math.abs(x1-x2);
@@ -166,12 +186,32 @@ repeat
     
 until (chunksComplete >= chunks);
 
+repeat
+    local id, message = rednet.receive(protocol, 10)
+    if (id ~= nil and message == "free") then -- send free as string when done mining !!!
+        for i=1, turtleTotal do
+            if (turtles[i] == id) then
+                turtlesFree[i] = 1;
+            end
+        end
+    end
+
+    local allFree = true;
+    for i=1, turtleTotal do
+        if(turtlesFree[i] == 0) then
+            allFree = false;
+        end
+    end
+until (allFree);
+
+rednet.broadcast("end", protocol);
+
 monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
 monitor.setBackgroundColour(colors.black)
 monitor.clearLine()
 monitor.write("Complete!")
 
-rednet.broadcast("end", protocol);
+
 
 
     
