@@ -23,7 +23,7 @@ function refuel(x, y, z)
             table.insert(message, z)
             local supplyID = nil;
             repeat
-                supplyID = rednet.lookup(protocol, "fueler")
+                supplyID = rednet.lookup(protocol, "tankercommand")
             until (supplyID);
             rednet.send(supplyID, message, protocol)
 
@@ -44,7 +44,7 @@ function dropOff(x, y, z)
 
     local supplyID = nil;
     repeat
-        supplyID = rednet.lookup(protocol, "supplier")
+        supplyID = rednet.lookup(protocol, "suppliercommand")
     until (supplyID);
     rednet.send(supplyID, message, protocol)
 

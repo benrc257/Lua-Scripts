@@ -61,14 +61,7 @@ tesseract[2] = read();
 print("\nEnter the teserract Z coordinate: ")
 tesseract[3] = read();
 
-storage = [];
-print("\nRequesting fuel storage coordinates...")
-print("\nEnter the fuel storage X coordinate: ")
-storage[1] = read();
-print("\nEnter the fuel storage Y coordinate: ")
-storage[2] = read();
-print("\nEnter the fuel storage Z coordinate: ")
-storage[3] = read();
+
 
 multishell.launch({},"fuel.lua", storage);
 multishell.launch({},"inv.lua", tesseract);
