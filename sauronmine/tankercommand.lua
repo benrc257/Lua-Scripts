@@ -5,7 +5,7 @@ print("\nComputer Label (\"tankercommand\") successfully set and broadcasted. Ho
 rednet.host(protocol, label)
 print("\nHosting Successful.")
 
-storage = [];
+storage = {};
 print("\nRequesting fuel storage coordinates...")
 print("\nEnter the fuel storage X coordinate: ")
 storage[1] = read();
@@ -14,17 +14,22 @@ storage[2] = read();
 print("\nEnter the fuel storage Z coordinate: ")
 storage[3] = read();
 
+function istable(t)
+    return (type(t) == "table")
+end
+
 repeat
     tankerID = rednet.lookup(protocol, "tanker")
+    os.sleep(0.05)
 until (tankerID ~= nil);
-message = [];
+message = {};
 message[1] = "coords";
 table.insert(message, storage[1])
 table.insert(message, storage[2])
 table.insert(message, storage[3])
 rednet.send(tankerID, message, protocol)
 
-queue = [];
+queue = {};
 count = 1;
 lastSent = 1;
 free = false;
@@ -38,10 +43,13 @@ repeat
     elseif (received == "tanker free") then
         free = true;
     end
-    
+
     if (free and lastSent < count) then
         rednet.send(tankerID, queue[lastSent], protocol)
         lastSent = lastSent+1;
         free = false;
     end
-until (received == "end")
+    os.sleep(0.05)
+until (false)
+
+rednet.unhost(protocol)

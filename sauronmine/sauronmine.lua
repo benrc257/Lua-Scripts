@@ -2,6 +2,7 @@ modem = peripheral.find("modem", rednet.open);
 print("\nWireless modem found. Opening...")
 
 protocol = "mining";
+sauron = "sauron";
 label = "gemstone";
 os.setComputerLabel(label)
 print("\nComputer Label (\"gemstone\") successfully set and broadcasted. Hosting mining rednet...")
@@ -22,15 +23,21 @@ print("\nMonitor online.")
 
 print("\nSauron boot sequence complete. Running mining script...")
 
+function istable(t)
+    return (type(t) == "table")
+end
+
 print("\nScanning for turtles...")
-turtles = [];
-turtleTotal = 1
+turtles = {};
+turtleTotal = 0
 repeat
-    local searchID = rednet.lookup(protocol, ("" .. turtleTotal));
     turtleTotal = turtleTotal+1;
+    local searchID = rednet.lookup(protocol, ("" .. turtleTotal));
     table.insert(turtles, searchID)
-until (searchID ~= nil)
-turtlesFree = [];
+    os.sleep(0.05)
+until (searchID == nil)
+turtleTotal = turtleTotal-1;
+turtlesFree = {};
 for i=1, turtleTotal do 
     table.insert(turtles, 1)
 end
@@ -51,19 +58,7 @@ y2 = read();
 print("\nEnter the second Z coordinate: ")
 z2 = read();
 
-tesseract = [];
-print("\nRequesting teserract coordinates...")
-print("\nEnter the teserract X coordinate: ")
-tesseract[1] = read();
-print("\nEnter the teserract Y coordinate: ")
-tesseract[2] = read();
-print("\nEnter the teserract Z coordinate: ")
-tesseract[3] = read();
 
-
-
-multishell.launch({},"fuel.lua", storage);
-multishell.launch({},"inv.lua", tesseract);
 
 print("\nPartioning...")
 length = math.abs(x1-x2);
@@ -102,14 +97,22 @@ else
     originZ = z2;
 end
 
-corners = [][]
-corners[1] = originX;
-corners[1][1] = originZ;
+corners = {};
+for i=1, 1000 do
+    corners[i] = {};
+end
+corners[1][1] = {originX, originZ};
 
 for i = 2, chunkLength do
     corners[i] = corners[i-1]-16;
     for j = 2, chunkWidth do
         corners[i][j] = corners[i-1][j-1]+16;
+    end
+end
+
+for i=2, chunkLength do
+    for j=2, chunkWidth do
+        corners[i][j] = {(corners[i-1][j][1]-16),corners[i-1][j][2]+16}
     end
 end
 
@@ -127,7 +130,9 @@ repeat
             if (turtlesFree[i] == 1) then
                 freeSlot = i;
                 break;
-            else freeslot = 0;
+            else 
+                freeslot = 0;
+            end
         end
 
         if (freeslot == 0) then
@@ -143,15 +148,17 @@ repeat
                         end
                     end
                 end
+                os.sleep(0.05)
             until (freed)
         end
+        os.sleep(0.05)
     until (freeSlot > 0);
     
-    local message = [] -- {"coords", x, y, z, depth, length, width}
-    message[1] == "coords";
-    table.insert(message, corner[currentLength])
+    local message = {}; -- {"coords", x, y, z, depth, length, width}
+    message[1] = "coords";
+    table.insert(message, corner[currentLength][currentWidth][1])
     table.insert(message, originY)
-    table.insert(message, corner[currentLength][currentWidth])
+    table.insert(message, corner[currentLength][currentWidth][2])
     table.insert(message, depth)
     if (currentLength == chunkLength and length%16) then
         table.insert(message, length%16)
@@ -194,6 +201,7 @@ repeat
             allFree = false;
         end
     end
+    os.sleep(0.05)
 until (allFree);
 
 rednet.broadcast("end", protocol);
@@ -203,10 +211,4 @@ monitor.setBackgroundColour(colors.black)
 monitor.clearLine()
 monitor.write("Complete!")
 
-
-
-
-    
-
-
-
+rednet.unhost(protocol)

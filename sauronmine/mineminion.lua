@@ -3,6 +3,10 @@ print("\nWireless modem found. Opening...")
 
 protocol = "mining";
 
+function istable(t)
+    return (type(t) == "table")
+end
+
 function triangulate()
     repeat
         x, y, z = gps.locate(5);
@@ -11,11 +15,10 @@ function triangulate()
 end
 
 function refuel(x, y, z)
-    if (turtle.getFuelLevel <= 2000) then
+    if (turtle.getFuelLevel <= 3000) then
         turtle.select(1)
-        if (turtle.refuel(0)) then
-            turtle.drop()
-            local message = []
+        if (turtle.getItemCount ~= 64) then
+            local message = {}
             message[1] = "fuel";
             table.insert(message, x)
             table.insert(message, y)
@@ -23,19 +26,20 @@ function refuel(x, y, z)
             local supplyID = nil;
             repeat
                 supplyID = rednet.lookup(protocol, "tankercommand")
+                os.sleep(0.05)
             until (supplyID);
             rednet.send(supplyID, message, protocol)
 
             repeat
-                time.sleep(1)
+                os.sleep(1)
             until (turtle.getItemCount());
         end
-        turtle.refuel()
+        turtle.refuel(63)
     end
 end
 
 function dropOff(x, y, z)
-    local message = []
+    local message = {}
     message[1] = "full";
     table.insert(message, x)
     table.insert(message, y)
@@ -44,6 +48,7 @@ function dropOff(x, y, z)
     local supplyID = nil;
     repeat
         supplyID = rednet.lookup(protocol, "suppliercommand")
+        os.sleep(0.05)
     until (supplyID);
     rednet.send(supplyID, message, protocol)
 
@@ -51,6 +56,7 @@ function dropOff(x, y, z)
         local success = false;
         local present, block = turtle.inspectDown();
         if (present) then if (block.name == "computercraft:turtle_advanced" or block.name == "computercraft:turtle") then success = true; end end
+        os.sleep(0.05)
     until (success)
 
     for i=2, 16 do 
@@ -74,7 +80,11 @@ end
 
 function face(facing, direction) -- direction is an int
     if (direction ~= facing) then 
-        if (direction > facing) then
+        if ((facing-direction) == 3) then
+            facing = turnL(facing);
+        elseif ((facing-direction) == -3) then
+            facing = turnR(facing);
+        elseif (direction > facing) then
             repeat 
                 facing = turnL(facing);
             until (direction == facing);
@@ -91,12 +101,17 @@ function fillLiquid()
     local present, block = turtle.inspectDown();
     if (present) then if (block.name == "minecraft:lava" or block.name == "minecraft:water") then
         local slot = 1
+        local success = false;
         while (slot < 16 and not success) do
             slot = slot+1;
             turtle.select(slot)
-            local success = turtle.placeDown();
+            local item = turtle.getItemDetail();
+            if (not (item.name == "minecraft:sand" or item.name == "minecraft:gravel")) then
+                success = turtle.placeDown();
+            end
         end
         turtle.select(1);
+        slot = 1;
     end end
 end
 
@@ -108,6 +123,7 @@ repeat
     if (lookup ~= nil) then
         print("\nTurtle " .. label .. " found.")
     end
+    os.sleep(0.05)
 until (lookup == nil);
 label = ("" .. label);
 
@@ -123,10 +139,10 @@ print("\nPosition found: " .. x .. " " .. y .. " ".. z)
 repeat
     print("\nWaiting for coordinates...")
 
-    local received = []
+    local received = {}
     repeat
         local exit = false;
-        coords = rednet.receive(protocol, 10) -- {"coords", x, y, z, depth, length, width}
+        id, coords = rednet.receive(protocol, 10) -- {"coords", x, y, z, depth, length, width}
         if (istable(coords)) then
             if (coords[1] == "coords") then 
                 exit = true; 
@@ -140,59 +156,49 @@ repeat
 
     print ("\nFueled. Ascending...")
     for i=y, 383 do
-        turtle.digUp()
-        turtle.up()
+        repeat turtle.digUp() until (turtle.up());
     end
 
     oldX = x;
     oldZ = z;
-    turtle.dig()
-    turtle.forward()
+    repeat turtle.dig() until (turtle.forward());
     x, y, z = triangulate();
     if (oldX ~= x) then -- 1 = north, 2 = east, 3 = south, 4 = west
         if (x > oldX) then facing = 2; else facing = 4; end
     else
         if (z > oldZ) then facing = 3; else facing = 1; end
     end
+    turtle.back()
 
     if (x ~= coords[2]) then -- going to destination X
         if (coords[2] < x) then facing = face(facing, 4); else facing = face(facing, 2); end
-        repeat
-            if (x ~= coords[2]) then
-                turtle.dig()
-                turtle.forward()
-                if (facing == 4) then
-                    x=x-1;
-                else
-                    x=x+1;
-                end
+        while (x ~= coords[2]) do
+            repeat turtle.dig() until (turtle.forward());
+            if (facing == 4) then
+                x=x-1;
+            else
+                x=x+1;
             end
-        until (x == coords[2]);
+        end
     end
 
     if (z ~= coords[4]) then -- going to destination Z
         if (coords[4] < z) then facing = face(facing, 1); else facing = face(facing, 3); end
-        repeat
-            if (z ~= coords[4]) then
-                turtle.dig()
-                turtle.forward()
-                if (facing == 1) then
-                    z=z-1;
-                else
-                    z=z+1;
-                end
+        while (z ~= coords[4]) do
+            repeat turtle.dig() until (turtle.forward());
+            if (facing == 1) then
+                z=z-1;
+            else
+                z=z+1;
             end
-        until (z == coords[4]);
+        end
     end
 
     if (y ~= coords[3]) then -- going to destination Y
-        repeat
-            if (y ~= coords[3]) then
-                turtle.digDown()
-                turtle.down()
-                z=z-1;
-            end
-        until (z == coords[4]);
+        while (y ~= coords[3]) do
+            repeat turtle.digDown() until (turtle.down());
+            y=y-1;
+        end
     end
 
     
@@ -208,13 +214,11 @@ repeat
                     z=z-1;
                 end
                 fillLiquid()
-                turtle.dig()
-                turtle.forward()
+                repeat turtle.dig() until (turtle.forward());
             end
             if (j~=coords[6]) then
                 facing = face(facing, 4);
-                turtle.dig()
-                turtle.forward()
+                repeat turtle.dig() until (turtle.forward());
                 x=x-1;
             end
         end
@@ -237,12 +241,13 @@ repeat
             end
         end
         if (i~=coords[5]) then
-            turtle.digDown()
-            turtle.down()
+            repeat turtle.digDown() until (turtle.down());
             y=y-1;
         end
         dropOff(x, y, z)
     end
     local gemstone = rednet.lookup(protocol, "gemstone")
-    rednet.send(gemstone, "done")
+    rednet.send(gemstone, "free")
 until (false);
+
+rednet.unhost(protocol)
