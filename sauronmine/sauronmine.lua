@@ -39,7 +39,7 @@ until (searchID == nil)
 turtleTotal = turtleTotal-1;
 turtlesFree = {};
 for i=1, turtleTotal do 
-    table.insert(turtles, 1)
+    turtlesFree[i] = true;
 end
 
 print("\n" .. turtleTotal .. " turtles found.")
@@ -100,34 +100,35 @@ end
 corners = {};
 for i=1, 1000 do
     corners[i] = {};
+    for j=1, 2 do
+        corners[i][j] = {};
+    end
 end
 corners[1][1] = {originX, originZ};
 
-for i = 2, chunkLength do
-    corners[i] = corners[i-1]-16;
-    for j = 2, chunkWidth do
-        corners[i][j] = corners[i-1][j-1]+16;
+for i=1, chunkLength do
+    for j=1, chunkWidth do
+        if (i == 1 and j == 1) then
+            os.sleep(0.05)
+        else
+            corners[i][j] = {(corners[1][1][1]-(16*(i-1))), (corners[1][1][2]+(16*(j-1)))}
+        end
     end
 end
 
-for i=2, chunkLength do
-    for j=2, chunkWidth do
-        corners[i][j] = {(corners[i-1][j][1]-16),corners[i-1][j][2]+16}
-    end
-end
-
-monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
+monitor.setCursorPos(marginW, ((mheight/2)-(mheight*.3)))
 monitor.write("Progress: ")
-call(monitor, "paintutils.drawFilledBox", (mwidth-(mwidth*.9)), ((mheight/2)-(mheight*.1)), (mwidth*.9), ((mheight/2)-(mheight*.3)), colors.lightGray)
+old = term.redirect(monitor)
+paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.3)), colors.lightGray)
+term.redirect(old)
 
 chunksComplete = 0;
 currentLength = 1;
 currentWidth = 1;
 repeat
-    local freeSlot = 0;
     repeat
         for i=1, turtleTotal do
-            if (turtlesFree[i] == 1) then
+            if (turtlesFree[i]) then
                 freeSlot = i;
                 break;
             else 
@@ -137,14 +138,13 @@ repeat
 
         if (freeslot == 0) then
             repeat
-                local free = false;
+                local freed = false;
                 local id, message = rednet.receive(protocol, 10)
                 if (id ~= nil and message == "free") then -- send free as string when done mining !!!
                     for i=1, turtleTotal do
                         if (turtles[i] == id) then
-                            turtlesFree[i] = 1;
+                            turtlesFree[i] = true;
                             freed = true;
-                            break;
                         end
                     end
                 end
@@ -156,23 +156,26 @@ repeat
     
     local message = {}; -- {"coords", x, y, z, depth, length, width}
     message[1] = "coords";
-    table.insert(message, corner[currentLength][currentWidth][1])
-    table.insert(message, originY)
-    table.insert(message, corner[currentLength][currentWidth][2])
-    table.insert(message, depth)
+    message[2] = corners[currentLength][currentWidth][1];
+    message[3] = originY;
+    message[4] = corners[currentLength][currentWidth][2];
+    message[5] = depth;
     if (currentLength == chunkLength and length%16) then
-        table.insert(message, length%16)
+        message[6] = length%16;
     else
-        table.insert(message, 16)
+        message[6] = 16;
     end
     if (currentWidth == chunkWidth and width%16) then
-        table.insert(message, width%16)
+        message[7] = width%16;
     else
-        table.insert(message, 16)
+        message[7] = 16;
     end
     rednet.send(turtles[freeSlot], message, protocol)
+    turtlesFree[freeslot] = false;
 
-    call(monitor, "paintutils.drawFilledBox", (mwidth-(mwidth*.85)), ((mheight/2)-(mheight*.1)), (mwidth*((.85)-(mwidth*(.85*(chunksComplete/chunks))))), ((mheight/2)-(mheight*.3)), colors.red)
+    old = term.redirect(monitor)
+    paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
+    term.redirect(old)
 
     if (currentWidth < chunkWidth) then
         currentWidth = currentWidth+1;
@@ -190,14 +193,14 @@ repeat
     if (id ~= nil and message == "free") then -- send free as string when done mining !!!
         for i=1, turtleTotal do
             if (turtles[i] == id) then
-                turtlesFree[i] = 1;
+                turtlesFree[i] = true;
             end
         end
     end
 
     local allFree = true;
     for i=1, turtleTotal do
-        if(turtlesFree[i] == 0) then
+        if(turtlesFree[i] == false) then
             allFree = false;
         end
     end

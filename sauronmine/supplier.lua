@@ -32,9 +32,9 @@ function findFacing(x, z)
 end
 
 function refuel(x, y, z)
-    if (turtle.getFuelLevel <= 4000) then
+    if (turtle.getFuelLevel() <= 4000) then
         turtle.select(1)
-        if (turtle.getItemCount ~= 64) then
+        if (turtle.getItemCount() ~= 64) then
             local message = {};
             message[1] = "fuel";
             table.insert(message, x)
@@ -88,7 +88,7 @@ end
 
 function resupply(x, y, z, x2, y2, z2, turtOrInv) -- 1 = north, 2 = east, 3 = south, 4 = west, true = turtle, false = inventory
     if (x~=x2 or z~=z2) then
-        for i=y, 383 do
+        for i=y, 318 do
             repeat turtle.digUp() until (turtle.up());
         end
     end
@@ -140,7 +140,7 @@ function resupply(x, y, z, x2, y2, z2, turtOrInv) -- 1 = north, 2 = east, 3 = so
             local suckcess = turtle.suckDown();
         until (not suckcess)
         turtle.dropDown(1)
-        for i=y, 383 do
+        for i=y, 318 do
             repeat turtle.digUp() until (turtle.up());
         end
     else
@@ -149,7 +149,7 @@ function resupply(x, y, z, x2, y2, z2, turtOrInv) -- 1 = north, 2 = east, 3 = so
             turtle.dropDown()
         end
         turtle.select(1)
-        for i=y, 383 do
+        for i=y, 318 do
             repeat turtle.digUp() until (turtle.up());
         end
     end
@@ -168,9 +168,9 @@ repeat
     until (id ~= nil);
     if (id == commandID and istable(message)) then
         if (message[1] == "coords") then
-            tx = message[2];
-            ty = message[3]+1;
-            tz = message[4]
+            tx = tonumber(message[2]);
+            ty = tonumber(message[3])+1;
+            tz = tonumber(message[4]);
             exit = true;
         end
     end
@@ -198,9 +198,9 @@ repeat
         id, message = rednet.receive(protocol);
         if (id == commandID) then if (istable(message)) then
             if (message[1] == "full") then
-                dx = message[2];
-                dy = message[3]+1;
-                dz = message[4]
+                dx = tonumber(message[2]);
+                dy = tonumber(message[3])+1;
+                dz = tonumber(message[4]);
                 exit = true;
             end
         end end

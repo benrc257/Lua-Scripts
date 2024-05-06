@@ -15,9 +15,9 @@ function triangulate()
 end
 
 function refuel(x, y, z)
-    if (turtle.getFuelLevel <= 3000) then
+    if (turtle.getFuelLevel() <= 3000) then
         turtle.select(1)
-        if (turtle.getItemCount ~= 64) then
+        if (turtle.getItemCount() ~= 64) then
             local message = {}
             message[1] = "fuel";
             table.insert(message, x)
@@ -134,7 +134,7 @@ print("\nHosting successful.")
 
 print("\nTriangulating position...")
 x, y, z = triangulate();
-print("\nPosition found: " .. x .. " " .. y .. " ".. z)
+print("\nPosition found.")
 
 repeat
     print("\nWaiting for coordinates...")
@@ -151,12 +151,20 @@ repeat
     until (exit);
     print ("\nCoordinates received...")
 
+    coords[2] = tonumber(coords[2]);
+    coords[3] = tonumber(coords[2]);
+    coords[4] = tonumber(coords[2]);
+    coords[5] = tonumber(coords[2]);
+    coords[6] = tonumber(coords[2]);
+    coords[7] = tonumber(coords[2]);
+
     turtle.select(1)
     turtle.refuel()
 
     print ("\nFueled. Ascending...")
-    for i=y, 383 do
+    for i=y, 318 do
         repeat turtle.digUp() until (turtle.up());
+        y=y+1;
     end
 
     oldX = x;
