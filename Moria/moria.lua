@@ -1,8 +1,10 @@
 print("\nSearching for modem...")
 repeat -- opening modem
-    modem = peripheral.find("modem", rednet.open);
-    os.sleep(2);
-until (modem);
+    modem = peripheral.find("modem");
+    os.sleep(0.05)
+until (modem)
+modemName = peripheral.getName(modem);
+rednet.open(modemName)
 print("\nWireless modem found. Opening...")
 
 protocol = "moria"; 
@@ -16,8 +18,8 @@ print("\nHosting Successful.")
 print("\nSearching for monitor...")
 repeat -- opening monitor
     monitor = peripheral.find("monitor");
-    os.sleep(2);
-until (monitor);
+    os.sleep(0.05)
+until (monitor ~= nil);
 print("\nCreating monitor interface...")
 monitorName = peripheral.getName(monitor);
 monitor.setBackgroundColor(colors.black)
@@ -44,29 +46,42 @@ repeat
     os.sleep(0.05)
 until (id == nil);
 turtleTotal = turtleTotal-1;
-print("\n" .. turtleTotal .. "turtles found...")
+print("\n" .. turtleTotal .. " turtles found...")
 
 print("\nSearching for disk drive...")
 repeat -- opening disk drive
     drive = peripheral.find("drive");
     os.sleep(2);
-until (drive);
+until (drive ~= nil);
 print("\nDisk drive found.")
 driveName = peripheral.getName(drive);
 print("\nSearching for disk...")
 if (not drive.isDiskPresent()) then
     print("\nNo disk found. Please insert the disk...")
     repeat
-        os.sleep(2)
+        os.sleep(0.05)
     until (drive.isDiskPresent())
 end
 disk = drive.getDiskLabel();
-print("\n\"" .. disk .. "\" found.")
-print("\nSearching for file \"coords\"")
+print("\nDisk found.")
+print("\nSearching for file \"coords.txt\"")
 file = fs.open("/disk/coords.txt", "r")
 if (not file) then
-
+    print("\nFile \"coords.txt\" could not be opened. Returning...")
+    return;
 end
+print("\nFile opened. Reading...")
+coords = {}
+for i=1, 6 do table.insert(coords, tonumber(file.readLine())) end -- 1 - x1, 2 - y1, 3 - z1, 4 - x2, 5 - y2, 6 - z2
+
+if (not coords[1]) then
+    print("\nFile \"coords.txt\" is empty. Returning...")
+    return;
+end
+print("\nClosing file...")
+file.close()
+
+
 
 
 
