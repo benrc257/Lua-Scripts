@@ -10,7 +10,7 @@ print("\nWireless modem found. Opening...")
 protocol = "moria"; 
 label = "Moria";
 os.setComputerLabel(label)
-print("\nComputer Label (\"" .. label .. "\") successfully set and broadcasted. Hosting moria rednet...")
+print("\nComputer Label (\"" .. label .. "\") successfully set. Hosting moria rednet...")
 rednet.host(protocol, label) -- opening moria rednet
 print("\nHosting Successful.")
 
@@ -38,7 +38,7 @@ turtles = {{}};
 turtleTotal = 0;
 repeat
     turtleTotal = turtleTotal+1;
-    local id = rednet.lookup(protocol, ("" .. turtleTotal));
+    local id = rednet.lookup(protocol, ("Turtle " .. turtleTotal));
     if (id ~= nil) then
         turtles[turtleTotal] = {id, true};
     end
