@@ -87,6 +87,7 @@ end
 function ascend()
     for i=y, coords[7] do
         repeat turtle.digUp() until (turtle.up());
+        y=y+1;
     end
 end
 
@@ -100,26 +101,32 @@ function goTo(dx, dy, dz)
     while (x < dx) do
         face(2)
         repeat turtle.dig() until (turtle.forward());
+        x=x+1;
     end
     while (x > dx) do
         face(4)
         repeat turtle.dig() until (turtle.forward());
+        x=x-1;
     end
 
     while (z < dz) do
         face(3)
         repeat turtle.dig() until (turtle.forward());
+        z=z+1;
     end
     while (z > dz) do
         face(1)
         repeat turtle.dig() until (turtle.forward());
+        z=z-1;
     end
 
     while (y < dy) do
         repeat turtle.digUp() until (turtle.up());
+        y=y+1;
     end
     while (y > dy) do
-        repeat turtle.digUp() until (turtle.up());
+        repeat turtle.digDown() until (turtle.down());
+        y=y-1;
     end
 end
 
