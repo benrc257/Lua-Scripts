@@ -132,7 +132,7 @@ for i=1, chunkLength do
         totalPartions = totalPartions+1;
     end
 end
-progressIncrement = (mwidth - (marginW))/totalPartions; -- used for progress bar
+progressIncrement = (mwidth - (marginW*2))/totalPartions; -- used for progress bar
 
 print("\n" .. totalPartions .. " partions created.")
 
@@ -177,7 +177,7 @@ old = term.redirect(monitor)
     paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.2)), colors.lightGray)
 term.redirect(old)
 
-progressTracker = 1;
+progressTracker = 0;
 for i=1, chunkLength do
     for j=1, chunkWidth do
         local id = findFree();
@@ -217,9 +217,15 @@ for i=totalFree, turtleTotal do
     os.pullEvent("turtleFree");
 end
 
+old = term.redirect(monitor)
+    paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.2)), colors.lime)
+term.redirect(old)
+
 monitor.setBackgroundColor(colors.black)
 monitor.setTextColor(colors.white)
 monitor.setCursorPos(marginW, ((mheight/2)-(mheight*.3)))
 monitor.write("Mining Complete!")
 
+rednet.broadcast("end", protocol)
 rednet.unhost(protocol)
+os.reboot()
