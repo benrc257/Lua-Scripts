@@ -1,8 +1,5 @@
-corners = {};
-for i=1, 1000 do
-    corners[i] = {};
-end
-corners[1][1] = {-34, 355};
+table = {{{}}};
 
-print(corners[1][1][1])
-print(corners[1][1][2])
+table[1][1] = {"a", "b", "c"};
+
+print(table[1][1][1], table[1][1][2], table[1][1][3])

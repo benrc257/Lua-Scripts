@@ -27,6 +27,8 @@ print("\nEnter the second Y coordinate: ")
 y2 = read();
 print("\nEnter the second Z coordinate: ")
 z2 = read();
+print("\nEnter the minimum ascension height for turtles.\nThis should be no greater than [318 - # of turtles]:")
+mah = read();
 
 print("\nWriting to disk...")
 file = fs.open("/disk/coords.txt", "w");
@@ -41,10 +43,13 @@ file.write("\n")
 file.write(y2)
 file.write("\n")
 file.write(z2)
+file.write("\n")
+file.write(mah)
 file.close()
 print("\nWriting complete.")
 
 file = fs.open("/disk/coords.txt", "r");
+print(file.readLine())
 print(file.readLine())
 print(file.readLine())
 print(file.readLine())
