@@ -81,21 +81,21 @@ print("\nCoordinates found. Closing file...")
 file.close()
 
 print("\nPartioning...")
-length = math.abs(coords[1]-coords[4]); -- length is x
-width = math.abs(coords[2]-coords[5]); -- depth is y
-depth = math.abs(coords[3]-coords[6]); -- width is z
+length = math.abs(coords[1]-coords[4])+1; -- length is x
+width = math.abs(coords[2]-coords[5])+1; -- depth is y
+depth = math.abs(coords[3]-coords[6])+1; -- width is z
 mah = coords[7];
 
 lengthRemainder = length%16;
 widthRemainder = width%16;
 
-if (lengthRemainder) then
+if (lengthRemainder ~= 0) then
     chunkLength = math.floor(length/16)+1;
 else
     chunkLength = length/16;
 end
 
-if (widthRemainder) then
+if (widthRemainder ~= 0) then
     chunkWidth = math.floor(width/16)+1;
 else
     chunkWidth = width/16;
@@ -129,6 +129,12 @@ for i=1, chunkLength do
     partions[i] = {}
     for j=1, chunkWidth do
         partions[i][j] = {(originX-(16*(i-1))), (originY), (originZ-(16*(j-1)))}
+        if (j == chunkWidth and widthRemainder ~= 0) then
+            partions[i][j][3] = (originZ-(widthRemainder*(j-1)))
+        end
+        if (i == chunkLength and lengthRemainder ~= 0) then
+            partions[i][j][1] = (originX-(lengthRemainder*(i-1)))
+        end
         totalPartions = totalPartions+1;
     end
 end
@@ -137,7 +143,7 @@ progressIncrement = (mwidth - (marginW*2))/totalPartions; -- used for progress b
 print("\n" .. totalPartions .. " partions created.")
 
 print("\nLaunching Moria relay...")
-relayID = multishell.launch({}, "moriarelay.lua")
+relayID = multishell.launch({}, "moriarelay.lua", progressIncrement)
 
 function findFree()
     local returnID, event = nil;
@@ -151,6 +157,7 @@ function findFree()
     end
 
     if (returnID == nil) then -- if no turtle is free, waits for event from the relay
+        os.queueEvent("ready")
         event, returnID = os.pullEvent("turtleFree");
     end
 
@@ -177,19 +184,18 @@ old = term.redirect(monitor)
     paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.2)), colors.lightGray)
 term.redirect(old)
 
-progressTracker = 0;
 for i=1, chunkLength do
     for j=1, chunkWidth do
         local id = findFree();
         local slot = findTurtleSlot(id);
         
         table.insert(partions[i][j], depth)
-        if (currentLength == chunkLength and lengthRemainder) then
+        if (currentLength == chunkLength and lengthRemainder ~= 0) then
             table.insert(partions[i][j], lengthRemainder)
         else
             table.insert(partions[i][j], 16)
         end
-        if (currentWidth == chunkWidth and widthRemainder) then
+        if (currentWidth == chunkWidth and widthRemainder ~= 0) then
             table.insert(partions[i][j], widthRemainder)
         else
             table.insert(partions[i][j], 16)
@@ -197,11 +203,13 @@ for i=1, chunkLength do
         table.insert(partions[i][j], (mah+slot))
 
         rednet.send(id, partions[i][j], protocol) -- {x, y, z, depth, length, width, mah}
-
-        progressTracker = progressTracker+1;
-        old = term.redirect(monitor)
-            paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (marginW+((progressIncrement*progressTracker))), ((mheight/2)+(mheight*.2)), colors.red)
-        term.redirect(old)
+        print(partions[i][j][1])
+        print(partions[i][j][2])
+        print(partions[i][j][3])
+        print(partions[i][j][4])
+        print(partions[i][j][5])
+        print(partions[i][j][6])
+        print(partions[i][j][7])
     end
 end
 

@@ -31,11 +31,13 @@ multishell.launch({}, "dwarfrelay.lua")
 print("\nRelay launched.")
 
 function awaitCoords()
+    os.queueEvent("ready")
     local event, returnCoords = os.pullEvent("coordinates");
     return returnCoords;
 end
 
 function triangulate()
+    x, y, z = nil;
     repeat
         x, y, z = gps.locate(5)
     until (x ~= nil);
@@ -43,10 +45,10 @@ function triangulate()
 end
 
 function findFacing()
-    local x1, y1, z1 = triangulate();
     repeat turtle.dig() until (turtle.forward());
     local x2, y2, z2 = triangulate();
     turtle.back();
+    local x1, y1, z1 = triangulate();
     if ((z2-z1) == -1) then -- 1 north, 2 east, 3 south, 4 west
         facing = 1;
     elseif ((x2-x1) == 1) then
@@ -61,33 +63,35 @@ end
 
 function turnR() -- 1 = north, 2 = east, 3 = south, 4 = west
     turtle.turnRight()
-    if (facing == 1) then facing = 4; else facing = facing-1; end
+    if (facing == 4) then facing = 1; else facing = facing+1; end
 end
 
 function turnL() -- 1 = north, 2 = east, 3 = south, 4 = west
     turtle.turnLeft()
-    if (facing == 4) then facing = 1; else facing = facing+1; end
+    if (facing == 1) then facing = 4; else facing = facing-1; end
 end
 
 function face(direction)
     if (facing == direction) then
         os.sleep(0.05)
     elseif ((facing-direction) == -3) then
-        turnR()
-    elseif ((facing-direction) == 3) then
         turnL()
+    elseif ((facing-direction) == 3) then
+        turnR()
     elseif (facing < direction) then
-        repeat turnL() until (facing == direction);
-    else
         repeat turnR() until (facing == direction);
+    else
+        repeat turnL() until (facing == direction);
     end
 end
 
 function ascend()
+    triangulate()
     for i=y, coords[7] do
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
+    triangulate()
 end
 
 function goTo(dx, dy, dz)
@@ -108,6 +112,8 @@ function goTo(dx, dy, dz)
         x=x-1;
     end
 
+    triangulate()
+
     while (z < dz) do
         face(3)
         repeat turtle.dig() until (turtle.forward());
@@ -119,6 +125,8 @@ function goTo(dx, dy, dz)
         z=z-1;
     end
 
+    triangulate()
+
     while (y < dy) do
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
@@ -127,6 +135,8 @@ function goTo(dx, dy, dz)
         repeat turtle.digDown() until (turtle.down());
         y=y-1;
     end
+
+    triangulate()
 end
 
 function refuel()
@@ -150,7 +160,7 @@ end
 function full()
     local full = 0;
     for i=2, 16 do
-        if(turtle.getItemCount(i)) then
+        if(turtle.getItemCount(i) ~= 0) then
             full = full+1;
         end
     end
@@ -163,13 +173,30 @@ function full()
         repeat
             full = 0;
             for i=2, 16 do
-                if(turtle.getItemCount(i)) then
+                if(turtle.getItemCount(i) ~= 0) then
                     full = full+1;
                 end
             end
             os.sleep(1)
         until (not full)
     end
+end
+
+function fillLiquid()
+    local present, block = turtle.inspectDown();
+    if (present) then if (block.name == "minecraft:lava" or block.name == "minecraft:water") then
+        local slot = 1;
+        local success = false;
+        while (slot < 16 and not success) do
+            slot = slot+1;
+            turtle.select(slot)
+            local item = turtle.getItemDetail();
+            if (not (item.name == "minecraft:sand" or item.name == "minecraft:gravel")) then
+                success = turtle.placeDown();
+            end
+        end
+        turtle.select(1);
+    end end
 end
 
 repeat
@@ -179,41 +206,53 @@ repeat
         turtle.refuel(63)
     end
     findFacing()
+    print(coords[1])
+    print(coords[2])
+    print(coords[3])
+    print(facing)
+    print(x)
+    print(y)
+    print(z)
     goTo(coords[1], coords[2], coords[3])
-    
+    triangulate()
 
     for i=1, coords[4] do
         refuel()
+        face(1)
         for j=1, coords[5] do
-            face(3)
             for k=2, coords[6] do
                 repeat turtle.dig() until (turtle.forward());
+                fillLiquid()
             end
             face(4)
-            if (j%2 and j~=coords[5]) then
+            if ((j%2) ~= 0 and j~=coords[5]) then
                 repeat turtle.dig() until (turtle.forward());
+                fillLiquid()
                 face(3)
             elseif (j~=coords[5]) then
                 repeat turtle.dig() until (turtle.forward());
+                fillLiquid()
                 face(1)
             end
         end
         triangulate()
-        if (x  ~= coords[1]) then
-            face(1)
-            for i=1, coords[6] do
+        if (z ~= coords[3]) then
+            face(3)
+            for j=2, coords[6] do
                 repeat turtle.dig() until (turtle.forward());
             end
         end
         face(2)
-        for i=1, coords[5] do
+        for j=2, coords[5] do
             repeat turtle.dig() until (turtle.forward());
+        end
+        if (i ~= coords[4]) then
+            repeat turtle.digDown() until (turtle.down());
+            fillLiquid()
         end
         full()
     end
 
-    ascend()
     local moria = rednet.lookup(protocol, "Moria")
     rednet.send(moria, "free", protocol)
-    local id, message = rednet.receive(protocol, 5)
-until (message == "end");
+until (false);

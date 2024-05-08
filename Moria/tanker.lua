@@ -16,14 +16,15 @@ print("\nTurtle Label (\"" .. label .. "\") successfully set. Hosting moria redn
 rednet.host(protocol, label) -- opening moria rednet
 print("\nHosting Successful.")
 
+function triangulate()
+    repeat
+        x, y, z = gps.locate(5)
+    until (x ~= nil);
+    return x, y, z;
+end
+
 print("\nRequesting storage coordinates...")
-print("\nEnter the X coordinate: ")
-sx = read();
-print("\nEnter the Y coordinate: ")
-sy = read();
-sy = sy+1;
-print("\nEnter the Z coordinate: ")
-sz = read();
+sx, sy, sz = triangulate()
 print("\nEnter the minimum ascension height for tanker.\nThis should be no greater than 318:")
 mah = read();
 
@@ -32,15 +33,9 @@ multishell.launch({}, "tankerrelay.lua")
 print("\nRelay launched.")
 
 function awaitCoords()
+    os.queueEvent("ready")
     local event, returnCoords = os.pullEvent("coordinates");
     return returnCoords;
-end
-
-function triangulate()
-    repeat
-        x, y, z = gps.locate(5)
-    until (x ~= nil);
-    return x, y, z;
 end
 
 function findFacing()
@@ -62,30 +57,30 @@ end
 
 function turnR() -- 1 = north, 2 = east, 3 = south, 4 = west
     turtle.turnRight()
-    if (facing == 1) then facing = 4; else facing = facing-1; end
+    if (facing == 4) then facing = 1; else facing = facing+1; end
 end
 
 function turnL() -- 1 = north, 2 = east, 3 = south, 4 = west
     turtle.turnLeft()
-    if (facing == 4) then facing = 1; else facing = facing+1; end
+    if (facing == 1) then facing = 4; else facing = facing-1; end
 end
 
 function face(direction)
     if (facing == direction) then
         os.sleep(0.05)
     elseif ((facing-direction) == -3) then
-        turnR()
-    elseif ((facing-direction) == 3) then
         turnL()
+    elseif ((facing-direction) == 3) then
+        turnR()
     elseif (facing < direction) then
-        repeat turnL() until (facing == direction);
-    else
         repeat turnR() until (facing == direction);
+    else
+        repeat turnL() until (facing == direction);
     end
 end
 
 function ascend()
-    for i=y, coords[7] do
+    for i=y, mah do
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
@@ -145,7 +140,7 @@ end
 function empty()
     local full = 0;
     for i=2, 16 do
-        if(turtle.getItemCount(i)) then
+        if(turtle.getItemCount(i) > 63) then
             full = full+1;
         end
     end
@@ -161,6 +156,7 @@ end
 repeat
     coords = awaitCoords(); -- {x, y, z, depth, length, width, mah}
     coords[2] = coords[2]+1;
+    empty()
     refuel()
     findFacing()
     goTo(coords[1], coords[2], coords[3])
@@ -175,5 +171,4 @@ repeat
 
     empty()
     ascend()
-    local id, message = rednet.receive(protocol, 5)
-until (message == "end");
+until (false);
