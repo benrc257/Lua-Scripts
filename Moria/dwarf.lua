@@ -85,9 +85,43 @@ function face(direction)
     end
 end
 
+function crosswalk()
+    repeat
+        local pedestrian = true;
+        local present, block = turtle.inspect();
+        if (present) then if (block.name == "computercraft:turtle_advanced") then
+            os.sleep(3)
+            pedestrian = false;
+        end end
+    until (pedestrian);
+end
+
+function crosswalkUp()
+    repeat
+        local pedestrian = true;
+        local present, block = turtle.inspectUp();
+        if (present) then if (block.name == "computercraft:turtle_advanced") then
+            os.sleep(3)
+            pedestrian = false;
+        end end
+    until (pedestrian);
+end
+
+function crosswalkDown()
+    repeat
+        local pedestrian = true;
+        local present, block = turtle.inspectDown();
+        if (present) then if (block.name == "computercraft:turtle_advanced") then
+            os.sleep(3)
+            pedestrian = false;
+        end end
+    until (pedestrian);
+end
+
 function ascend()
     triangulate()
     for i=y, coords[7] do
+        crosswalkUp()
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
@@ -103,11 +137,13 @@ function goTo(dx, dy, dz)
     
     while (x < dx) do
         face(2)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         x=x+1;
     end
     while (x > dx) do
         face(4)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         x=x-1;
     end
@@ -116,11 +152,13 @@ function goTo(dx, dy, dz)
 
     while (z < dz) do
         face(3)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         z=z+1;
     end
     while (z > dz) do
         face(1)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         z=z-1;
     end
@@ -128,10 +166,12 @@ function goTo(dx, dy, dz)
     triangulate()
 
     while (y < dy) do
+        crosswalkUp()
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
     while (y > dy) do
+        crosswalkDown()
         repeat turtle.digDown() until (turtle.down());
         y=y-1;
     end
@@ -178,7 +218,7 @@ function full()
                 end
             end
             os.sleep(1)
-        until (not full)
+        until (full == 0)
     end
 end
 

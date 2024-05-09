@@ -82,12 +82,12 @@ file.close()
 
 print("\nPartioning...")
 length = math.abs(coords[1]-coords[4])+1; -- length is x
-width = math.abs(coords[2]-coords[5])+1; -- depth is y
-depth = math.abs(coords[3]-coords[6])+1; -- width is z
+depth = math.abs(coords[2]-coords[5])+1; -- depth is y
+width = math.abs(coords[3]-coords[6])+1; -- width is z
 mah = coords[7];
 
-lengthRemainder = length%16;
-widthRemainder = width%16;
+lengthRemainder = (length%16);
+widthRemainder = (width%16);
 
 if (lengthRemainder ~= 0) then
     chunkLength = math.floor(length/16)+1;
@@ -122,6 +122,7 @@ else
 end
 
 print("\nOrigin found at " .. originX .. ", " .. originY .. ", " .. originZ .. ".") -- mining from +,+ to -,- or greater to lesser
+print("\nWidth Remainder: " .. widthRemainder .. ", Length Remainder: " .. lengthRemainder)
 
 partions = {};
 totalPartions = 0;
@@ -203,13 +204,7 @@ for i=1, chunkLength do
         table.insert(partions[i][j], (mah+slot))
 
         rednet.send(id, partions[i][j], protocol) -- {x, y, z, depth, length, width, mah}
-        print(partions[i][j][1])
-        print(partions[i][j][2])
-        print(partions[i][j][3])
-        print(partions[i][j][4])
-        print(partions[i][j][5])
-        print(partions[i][j][6])
-        print(partions[i][j][7])
+        print("\nCoordinates sent to turtle " .. id .. "| X: " .. partions[i][j][1] .. ", Y: " .. partions[i][j][2] .. ", Z: " .. partions[i][j][3] .. ", Depth: " .. partions[i][j][4] .. ", Length: " .. partions[i][j][5] .. ", Width: " .. partions[i][j][6] .. ", MAH: " .. partions[i][j][7])
     end
 end
 

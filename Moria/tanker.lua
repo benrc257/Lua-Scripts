@@ -39,10 +39,10 @@ function awaitCoords()
 end
 
 function findFacing()
-    local x1, y1, z1 = triangulate();
     repeat turtle.dig() until (turtle.forward());
     local x2, y2, z2 = triangulate();
     turtle.back();
+    local x1, y1, z1 = triangulate();
     if ((z2-z1) == -1) then -- 1 north, 2 east, 3 south, 4 west
         facing = 1;
     elseif ((x2-x1) == 1) then
@@ -79,11 +79,47 @@ function face(direction)
     end
 end
 
+function crosswalk()
+    repeat
+        local pedestrian = true;
+        local present, block = turtle.inspect();
+        if (present) then if (block.name == "computercraft:turtle_advanced") then
+            os.sleep(3)
+            pedestrian = false;
+        end end
+    until (pedestrian);
+end
+
+function crosswalkUp()
+    repeat
+        local pedestrian = true;
+        local present, block = turtle.inspectUp();
+        if (present) then if (block.name == "computercraft:turtle_advanced") then
+            os.sleep(3)
+            pedestrian = false;
+        end end
+    until (pedestrian);
+end
+
+function crosswalkDown()
+    repeat
+        local pedestrian = true;
+        local present, block = turtle.inspectDown();
+        if (present) then if (block.name == "computercraft:turtle_advanced") then
+            os.sleep(3)
+            pedestrian = false;
+        end end
+    until (pedestrian);
+end
+
 function ascend()
+    triangulate()
     for i=y, mah do
+        crosswalkUp()
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
+    triangulate()
 end
 
 function goTo(dx, dy, dz)
@@ -95,34 +131,46 @@ function goTo(dx, dy, dz)
     
     while (x < dx) do
         face(2)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         x=x+1;
     end
     while (x > dx) do
         face(4)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         x=x-1;
     end
 
+    triangulate()
+
     while (z < dz) do
         face(3)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         z=z+1;
     end
     while (z > dz) do
         face(1)
+        crosswalk()
         repeat turtle.dig() until (turtle.forward());
         z=z-1;
     end
 
+    triangulate()
+
     while (y < dy) do
+        crosswalkUp()
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
     while (y > dy) do
+        crosswalkDown()
         repeat turtle.digDown() until (turtle.down());
         y=y-1;
     end
+
+    triangulate()
 end
 
 function refuel()
