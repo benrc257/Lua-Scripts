@@ -29,20 +29,21 @@ print("\nPlatforming is starting...");
 sleep(3);
 
 function detectWater()
-    local present = turtle.inspectDown();
-    if (present) then return false
-    else return true end
+    return true;
 end
 
 slot = 16;
 function detectSlot()
+    slot = 16;
     turtle.select(slot)
-    if (turtle.getItemCount(slot) == 0 and slot ~= 2) then
-        slot = slot-1;
-        turtle.select(slot)
-    elseif (turtle.getItemCount(slot) == 0 and slot == 2) then
-        repeat sleep(1) until (turtle.getItemCount(slot) > 0)
-    end
+    repeat
+        if (turtle.getItemCount(slot) == 0 and slot ~= 2) then
+            slot = slot-1;
+            turtle.select(slot)
+        elseif (turtle.getItemCount(slot) == 0 and slot == 2) then
+            repeat sleep(1) until (turtle.getItemCount(slot) > 0)
+        end
+    until (turtle.getItemCount() > 0);
 end
 
     local trackerL = 0; --reinitalizes length tracker to 0
