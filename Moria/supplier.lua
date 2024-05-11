@@ -227,6 +227,11 @@ repeat
     turtle.select(1)
     turtle.dropDown()
 
+    face(4)
+    crosswalk()
+    repeat turtle.dig() until (turtle.forward());
+    x = x-1;
+
     goTo(sx, sy, sz)
 
     for i=1, 16 do

@@ -216,7 +216,10 @@ repeat
             break;
         end
     end
-
+    face(4)
+    crosswalk()
+    repeat turtle.dig() until (turtle.forward());
+    x = x-1;
     empty()
     ascend()
 until (false);
