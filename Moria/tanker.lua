@@ -8,8 +8,6 @@ rednet.open(modemName)
 print("\nWireless modem found. Opening...")
 
 protocol = "moria"; 
-
-protocol = "moria"; 
 label = "tanker";
 os.setComputerLabel(label)
 print("\nTurtle Label (\"" .. label .. "\") successfully set. Hosting moria rednet...")

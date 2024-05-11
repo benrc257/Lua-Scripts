@@ -9,8 +9,18 @@ print("\nWireless modem found. Opening...")
 
 protocol = "moria"; 
 
-protocol = "moria"; 
-label = "supplier";
+print("\nSearching for existing turtles...")
+label = 0;
+repeat
+    label = label+1;
+    local lookup =  rednet.lookup(protocol, "supplier " .. label);
+    if (lookup ~= nil) then
+        print("\nSupplier " .. label .. " found.")
+    end
+    os.sleep(0.05)
+until (lookup == nil);
+label = ("supplier " .. label);
+
 os.setComputerLabel(label)
 print("\nTurtle Label (\"" .. label .. "\") successfully set. Hosting moria rednet...")
 rednet.host(protocol, label) -- opening moria rednet

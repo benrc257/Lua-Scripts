@@ -19,7 +19,12 @@ repeat
     end
     os.sleep(0.05)
 until (lookup == nil);
+labelNum = label;
 label = ("Turtle " .. label);
+
+supplierName = math.ceil((labelNum/3));
+supplierName = "supplier " .. supplierName;
+print("\nSupplier number set to \"" .. supplierName .. "\".") 
 
 os.setComputerLabel(label)
 print("\nTurtle Label (\"" .. label .. "\") successfully set. Hosting moria rednet...")
@@ -205,8 +210,8 @@ function full()
         end
     end
 
-    if (full >= 8) then
-        local supplier = rednet.lookup(protocol, "supplier");
+    if (full >= 10) then
+        local supplier = rednet.lookup(protocol, supplierName);
         local position = {};
         position[1], position[2], position[3] = triangulate();
         rednet.send(supplier, position, protocol)

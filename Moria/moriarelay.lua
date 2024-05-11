@@ -1,4 +1,5 @@
 progressIncrement = {...};
+progressIncrement = progressIncrement[1]
 modem = peripheral.find("modem");
 protocol = "moria"; 
 monitor = peripheral.find("monitor");

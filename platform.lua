@@ -8,7 +8,7 @@ print("Is the robot facing East or West? (E or W):")
 EoW = read();
 if (EoW == 'E' or EoW == 'e') then facingEast = true else facingEast = false end
 
-fuelNeed = ((Length*Width)/4);
+fuelNeed = ((Length*Width));
 print("This turtle will need a total amount of fuel equal to a burn time of: ", fuelNeed)
 print("Please insert fuel now, then press enter.\r")
 read();
@@ -49,7 +49,7 @@ end
     local trackerL = 0; --reinitalizes length tracker to 0
     local facingEast = facingEast --facingEast is used to determine which way the robot is facing at the start
 
-    if (turtle.getFuelLevel() < ((fuelNeed*4))) then --turtle refuels if fuelLevel is less than fuelNeed
+    if (turtle.getFuelLevel() < ((fuelNeed)+300)) then --turtle refuels if fuelLevel is less than fuelNeed
         local refuelCount = 0;
         turtle.select(1)
         repeat
@@ -59,7 +59,7 @@ end
                 if (hasModem) then rednet.broadcast("Error(fuel needed), platforming paused! " .. textutils.formatTime(os.time()), "platforming") end
                 sleep(10)
             end
-        until (turtle.getFuelLevel() >= ((fuelNeed*4))); --turtle will not proceed until fuel is provided
+        until (turtle.getFuelLevel() >= ((fuelNeed))); --turtle will not proceed until fuel is provided
         turtle.select(slot)
     end
 
