@@ -38,6 +38,7 @@ function sendDisk()
         print("\nSender was stuck in loop!")
     end
     turtle.drop()
+    rednet.broadcast(protocol, protocol)
     print("\nDisk Sent")
 end
 
@@ -83,7 +84,6 @@ end
 repeat
     parallel.waitForAny(sending, receiving)
     if (mode == 1) then
-        rednet.broadcast(protocol, protocol)
         sendDisk()
     elseif (mode == 2) then
         parallel.waitForAny(receiveDisk, returning)
