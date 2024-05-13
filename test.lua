@@ -1,5 +1,8 @@
-table = {{{}}};
-
-table[1][1] = {"a", "b", "c"};
-
-print(table[1][1][1], table[1][1][2], table[1][1][3])
+turtle.select(2)
+repeat
+    local item = turtle.getItemDetail();
+    if (item ~= nil) then if (not (item.name == "minecraft:sand" or item.name == "minecraft:gravel")) then
+        success = turtle.placeDown();
+    end end
+   os.sleep(0.05)
+until false;

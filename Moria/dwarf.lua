@@ -218,7 +218,7 @@ function full()
         repeat
             full = 0;
             for i=2, 16 do
-                if(turtle.getItemCount(i) ~= 0) then
+                if (turtle.getItemCount(i) ~= 0) then
                     full = full+1;
                 end
             end
@@ -236,9 +236,9 @@ function fillLiquid()
             slot = slot+1;
             turtle.select(slot)
             local item = turtle.getItemDetail();
-            if (not (item.name == "minecraft:sand" or item.name == "minecraft:gravel")) then
+            if (item ~= nil) then if (not (item.name == "minecraft:sand" or item.name == "minecraft:gravel")) then
                 success = turtle.placeDown();
-            end
+            end end
         end
         turtle.select(1);
     end end
