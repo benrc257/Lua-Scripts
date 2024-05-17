@@ -58,22 +58,7 @@ function input()
     return keyOut;
 end
 
-function setupLines()
-    term.setBackgroundColor(colors.black)
-    term.clear()
-    for i=1, 19 do
-        if (i%2 == 1) then
-            paintutils.drawLine(1, i, 51, i, colors.white)
-        else
-            paintutils.drawLine(1, i, 51, i, colors.black)
-        end
-    end
-end
-
-function startDisplay()
-    local currentPage, currentLine = 1, 1;
-    term.setCursorBlink(false)
-    setupLines()
+function printDisplay()
     local totalPages = math.ceil(size/18)
     local pageLength = {};
     for i=1, totalPages do
@@ -83,7 +68,8 @@ function startDisplay()
             pageLength[i] = size%18;
         end
     end
-        
+    term.setCursorBlink(false)
+    term.setBackgroundColor(colors.black)   
     for i=1, pageLength[currentPage] do
         if (i == currentLine) then
             paintutils.setTextColor(colors.black)
@@ -93,30 +79,14 @@ function startDisplay()
         term.setCursorPos(1, i)
         print(i .. " - " .. destinations[i+((pageLength-1)*19)])
     end
+    term.setCursorPos(1, 19)
+    print("Page " .. currentPage .. " of " .. totalPages)
 end
 
 function manageDisplay()
-    local currentPage, currentLine = 1, 1;
-    term.setCursorBlink(false)
-    setupLines()
-    local totalPages = math.ceil(size/18)
-    local pageLength = {};
-    for i=1, totalPages do
-        if (i ~= totalPages) then
-            pageLength[i] = 18;
-        else
-            pageLength[i] = size%18;
-        end
-    end
-        
-    for i=1, pageLength[currentPage] do
-        if (i == currentLine) then
-            paintutils.setTextColor(colors.black)
-        else
-            term.setTextColor(colors.white)
-        end
-        term.setCursorPos(1, i)
-        print(i .. " - " .. destinations[i+((pageLength-1)*19)])
-    end
+    currentPage, currentLine = 1, 1;
+    printDisplay()
+
+    
 end
 
