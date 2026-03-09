@@ -1,5 +1,7 @@
 protocol = "mining";
 
+maxheight = 110;
+
 print("\nSearching for existing turtles...")
 local label = 0;
 repeat
@@ -100,7 +102,7 @@ end
 
 function resupply(x, y, z, x2, y2, z2, turtOrInv) -- 1 = north, 2 = east, 3 = south, 4 = west, true = turtle, false = inventory
     if (x~=x2 or z~=z2) then
-        for i=y, 318 do
+        for i=y, (maxheight+label) do
             repeat turtle.digUp() until (turtle.up());
         end
     end
@@ -152,7 +154,7 @@ function resupply(x, y, z, x2, y2, z2, turtOrInv) -- 1 = north, 2 = east, 3 = so
             local suckcess = turtle.suckDown();
         until (not suckcess)
         turtle.dropDown(1)
-        for i=y, 318 do
+        for i=y, (maxheight+label) do
             repeat turtle.digUp() until (turtle.up());
         end
     else
@@ -161,7 +163,7 @@ function resupply(x, y, z, x2, y2, z2, turtOrInv) -- 1 = north, 2 = east, 3 = so
             turtle.dropDown()
         end
         turtle.select(1)
-        for i=y, 318 do
+        for i=y, (maxheight+label) do
             repeat turtle.digUp() until (turtle.up());
         end
     end
