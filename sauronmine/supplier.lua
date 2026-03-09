@@ -10,11 +10,11 @@ repeat
     end
     os.sleep(0.05)
 until (lookup == nil);
-label = ("supplier" .. label);
+local setlabel = ("supplier" .. label);
 
-os.setComputerLabel(label)
+os.setComputerLabel(setlabel)
 print("\nComputer Label (\"supplier" .. label .. ") successfully set and broadcasted. Hosting mining rednet...")
-rednet.host(protocol, label)
+rednet.host(protocol, setlabel)
 print("\nHosting Successful.")
 
 function istable(t)
