@@ -1,7 +1,19 @@
 protocol = "mining";
-label = "supplier";
+
+print("\nSearching for existing turtles...")
+local label = 0;
+repeat
+    label = label+1;
+    local lookup =  rednet.lookup(protocol, "supplier" .. label);
+    if (lookup ~= nil) then
+        print("\nTurtle " .. label .. " found.")
+    end
+    os.sleep(0.05)
+until (lookup == nil);
+label = ("supplier" .. label);
+
 os.setComputerLabel(label)
-print("\nComputer Label (\"supplier\") successfully set and broadcasted. Hosting mining rednet...")
+print("\nComputer Label (\"supplier" .. label .. ") successfully set and broadcasted. Hosting mining rednet...")
 rednet.host(protocol, label)
 print("\nHosting Successful.")
 
