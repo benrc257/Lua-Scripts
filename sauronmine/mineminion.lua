@@ -1,7 +1,8 @@
 modem = peripheral.find("modem", rednet.open);
 print("\nWireless modem found. Opening...")
-
 protocol = "mining";
+
+maxheight = 100;
 
 function istable(t)
     return (type(t) == "table")
@@ -162,7 +163,7 @@ repeat
     turtle.refuel()
 
     print ("\nFueled. Ascending...")
-    for i=y, 318 do
+    for i=y, (maxheight-label) do
         repeat turtle.digUp() until (turtle.up());
         y=y+1;
     end
