@@ -83,17 +83,15 @@ end
 local function openOperationFile() -- opens the last file and checks if it was completed, otherwise it creates a new one
     local file = nil
     local previousOperation = false
-    if (fs.exists("sauron/mining/") == false) then
+    if (fs.exists("sauron/mining/") == false) then -- checks if doesnt directory exist
         fs.makeDir("sauron/mining/")
-        if (fs.exists("sauron/mining/operation.txt") == false) then
-            
-        else
+    else -- if directory does exist
+        if (fs.exists("sauron/mining/operation.txt") == true) then -- checks if file exists directory exist
             previousOperation = true
         end
-    else
-
     end
 
+    file = fs.open("sauron/mining/operation.txt", "r+")
     return {file, previousOperation}
 end
 

@@ -1,12 +1,19 @@
 -- libs
 func = require("functions")
 
--- globals
+-- variables
 protocol = "sauron"; -- rednet protocol
 turtleProtocol = "sauronTurtles"
+tankerProtocol = "sauronTankers"
+supplierProtocol = "sauronSuppliers"
 label = "EYE"; -- computer label
 turtles = {}; -- list of turtles
 turtlesIdle = {}; -- list of idle turtles
+local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
+local lastchunk = nil -- used for last chunk completed in file
+local file = nil -- used for operation file
+local previousOperation = nil -- used to tell if there was a previous incomplete mining operation
+local originX, originY, originZ = nil -- used for starting coords
 
 -- initializing rednet
 func.rednetInit(label)
@@ -22,45 +29,79 @@ turtles, turtlesIdle = func.updateTurtles(turtleProtocol, turtles, turtlesIdle)
 
 -- attempt to recover previous operation
 print("\nSauron boot sequence complete. Searching for previous operations...")
-local mainfile = func.openOperationFile()
+file, previousOperation = func.openOperationFile()
+
+if (previousOperation == false) then -- if no previous operation found, request coordinates
+
+    print("\nNo previous operation found. Requesting coordinates...")
+    print("\nEnter the first X coordinate: ")
+    x1 = read();
+    print("\nEnter the first Y coordinate: ")
+    y1 = read();
+    print("\nEnter the first Z coordinate: ")
+    z1 = read();
+    print("\nEnter the second X coordinate: ")
+    x2 = read();
+    print("\nEnter the second Y coordinate: ")
+    y2 = read();
+    print("\nEnter the second Z coordinate: ")
+    z2 = read();
+    print("\nEnter the max safe height: ")
+    maxheight = read();
+
+    -- write new operation coords to file
+    file.write(x1 .. "\n" .. y1 .. "\n" .. z1 .. "\n" .. x2 .. "\n" .. y2 .. "\n" .. z2 .. "\n" .. maxheight .. "\n")
+
+else -- if previous operation found, read from file and find last chunk completed and coords
+
+    x1 = file.readLine()
+    y1 = file.readLine()
+    z1 = file.readLine()
+    x2 = file.readLine()
+    y2 = file.readLine()
+    z2 = file.readLine()
+    maxheight = file.readLine()
+
+    local lastline = {}
+    do -- read through file to find last chunk completed
+        lastline.append(file.readLine())
+    while lastline[#lastline] ~= nil end
+
+    
+    if (lastline[1] == nil or lastline[2] == nil) then -- check if lastchunk wasn't there
+        lastchunk = nil
+    else -- otherwise record last chunk
+        lastchunk = {lastline[(#lastline) - 2], lastline[(#lastline) - 1]}
+    end
+
+end
 
 
-print("\nRequesting coordinates...")
-print("\nEnter the first X coordinate: ")
-x1 = read();
-print("\nEnter the first Y coordinate: ")
-y1 = read();
-print("\nEnter the first Z coordinate: ")
-z1 = read();
-print("\nEnter the second X coordinate: ")
-x2 = read();
-print("\nEnter the second Y coordinate: ")
-y2 = read();
-print("\nEnter the second Z coordinate: ")
-z2 = read();
-
-
-
+-- partioning chunks for jobs
 print("\nPartioning...")
-length = math.abs(x1-x2);
-width = math.abs(z1-z2);
-depth = math.abs(y1-y2);
+local length = math.abs(x1-x2);
+local width = math.abs(z1-z2);
+local depth = math.abs(y1-y2);
 
-if (length%16 == 0) then 
+-- calculate number of chunks long
+if (length%16 == 0) then
     chunkLength = length/16;
 else
     chunkLength = (length/16)+1;
 end
 
+-- calculate number of chunks wide
 if (width%16 == 0) then 
     chunkWidth = width/16;
 else
     chunkWidth = (width/16)+1;
 end
 
-chunks = chunkLength*chunkWidth;
+-- calculate total number of chunks
+local chunks = chunkLength*chunkWidth;
 
-if (x1 > x2) then
+-- calculate origin
+if (x1 < x2) then
     originX = x1;
 else
     originX = x2;
@@ -78,6 +119,19 @@ else
     originZ = z2;
 end
 
+-- assign corners
+local startingCorners = {}
+local endingCorners = {}
+for i=1, chunks do
+    startingCorners[i] = {}
+    endingCorners[i] = {}
+    for j=1, 2 do
+        corners[i][j] = {};
+    end
+end
+
+
+-- stopped here
 corners = {};
 for i=1, 1000 do
     corners[i] = {};
