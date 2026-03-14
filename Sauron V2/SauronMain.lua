@@ -154,9 +154,9 @@ for i=1, length do -- chunks are partioned in order from bottom left to top righ
 end
 
 -- launch helper programs
-multishell.setTitle(multishell.launch("SauronTank.lua"), "SauronTank", protocol, tankerProtocol)
-multishell.setTitle(multishell.launch("SauronSupply.lua"), "SauronSupply", protocol, supplierProtocol)
-multishell.setTitle(multishell.launch("SauronTurtles.lua"), "SauronTurtles", protocol, turtleProtocol)
+multishell.setTitle(multishell.launch(_ENV,"SauronTank.lua", protocol, tankerProtocol), "SauronTank")
+multishell.setTitle(multishell.launch(_ENV,"SauronSupply.lua", protocol, supplierProtocol), "SauronSupply")
+multishell.setTitle(multishell.launch(_ENV,"SauronTurtles.lua", protocol, turtleProtocol), "SauronTurtles")
 
 
 
