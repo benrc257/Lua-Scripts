@@ -1,3 +1,5 @@
+-- Look upon my works, ye mighty, and despair!
+
 -- libs
 func = require("functions")
 
@@ -11,6 +13,7 @@ completed = false -- switch to true when mining is over
 label = "EYE"; -- computer label
 turtles = {}; -- list of turtles
 turtlesIdle = {}; -- list of idle turtles
+fuelSource = "minecraft:dried_kelp_block" -- change if you want to swap fuel sources
 local chunkSize = 16 -- size of mined chunks
 local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
@@ -156,9 +159,10 @@ for i=1, length do -- chunks are partioned in order from bottom left to top righ
 end
 
 -- launch helper programs
-multishell.setTitle(multishell.launch(_ENV,"SauronTank.lua"), "SauronTank")
-multishell.setTitle(multishell.launch(_ENV,"SauronSupply.lua"), "SauronSupply")
-multishell.setTitle(multishell.launch(_ENV,"SauronTurtles.lua"), "SauronTurtles")
+multishell.launch(_ENV,"SauronTank.lua") -- contacts tankers
+multishell.launch(_ENV,"SauronSupply.lua") -- contacts suppliers
+multishell.launch(_ENV,"SauronTurtles.lua") -- updates turtle list
+multishell.launch(_ENV,"SauronDock.lua") -- docks turtles
 
 
 
@@ -171,6 +175,9 @@ multishell.setTitle(multishell.launch(_ENV,"SauronTurtles.lua"), "SauronTurtles"
 
 
 
+
+
+-- old monitor stuff
 
 monitor.setCursorPos(marginW, ((mheight/2)-(mheight*.3)))
 monitor.write("Progress: ")
@@ -178,96 +185,11 @@ old = term.redirect(monitor)
 paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.3)), colors.lightGray)
 term.redirect(old)
 
-chunksComplete = 0;
-currentLength = 1;
-currentWidth = 1;
-repeat
-    repeat
-        for i=1, turtleTotal do
-            if (turtlesIdle[i]) then
-                freeSlot = i;
-                break;
-            else 
-                freeslot = 0;
-            end
-        end
-
-        if (freeslot == 0) then
-            repeat
-                local freed = false;
-                local id, message = rednet.receive(protocol, 10)
-                if (id ~= nil and message == "free") then -- send free as string when done mining !!!
-                    for i=1, turtleTotal do
-                        if (turtles[i] == id) then
-                            turtlesIdle[i] = true;
-                            freed = true;
-                        end
-                    end
-                end
-                os.sleep(0.05)
-            until (freed)
-        end
-        os.sleep(0.05)
-    until (freeSlot > 0);
-    
-    local message = {}; -- {"coords", x, y, z, depth, length, width}
-    message[1] = "coords";
-    message[2] = corners[currentLength][currentWidth][1];
-    message[3] = originY;
-    message[4] = corners[currentLength][currentWidth][2];
-    message[5] = depth;
-    if (currentLength == chunkLength and length%chunkSize) then
-        message[6] = length%chunkSize;
-    else
-        message[6] = chunkSize;
-    end
-    if (currentWidth == chunkWidth and width%chunkSize) then
-        message[7] = width%chunkSize;
-    else
-        message[7] = chunkSize;
-    end
-    rednet.send(turtles[freeSlot], message, protocol)
-    turtlesIdle[freeslot] = false;
-
-    old = term.redirect(monitor)
-    paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
-    term.redirect(old)
-
-    if (currentWidth < chunkWidth) then
-        currentWidth = currentWidth+1;
-    else
-        currentWidth = 1;
-        currentLength = currentLength+1;
-    end
-
-    chunksComplete = chunksComplete+1;
-    
-until (chunksComplete >= chunks);
-
-repeat
-    local id, message = rednet.receive(protocol, 10)
-    if (id ~= nil and message == "free") then -- send free as string when done mining !!!
-        for i=1, turtleTotal do
-            if (turtles[i] == id) then
-                turtlesIdle[i] = true;
-            end
-        end
-    end
-
-    local allFree = true;
-    for i=1, turtleTotal do
-        if(turtlesIdle[i] == false) then
-            allFree = false;
-        end
-    end
-    os.sleep(0.05)
-until (allFree);
-
-rednet.broadcast("end", protocol);
+old = term.redirect(monitor)
+paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
+term.redirect(old)
 
 monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
 monitor.setBackgroundColour(colors.black)
 monitor.clearLine()
 monitor.write("Complete!")
-
-rednet.unhost(protocol)

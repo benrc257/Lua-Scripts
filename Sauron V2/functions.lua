@@ -1,9 +1,13 @@
+-- if (want to take over world) then "no" end
+
 local function rednetInit(label)  -- Opens rednet on the computer and returns the modem peripheral
-    local modems = peripheral.find("modem", rednet.open);
-    if 
-    print("\nWireless modem found. Opening...")
+    print("\nAttempting to find modems...")
+    do -- repeatedly search for modems and open rednet until both are complete
+        local modems = peripheral.find("modem", rednet.open);
+    until #modems > 0 and rednet.isOpen() end
+    print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
-    print("\nComputer Label (".. label ..") successfully set and broadcasted.")
+    print("\nComputer Label (".. label ..") successfully set.")
     return {modems}
 end
 
@@ -65,7 +69,7 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
         if (message == "idle") then -- if idle message was received add it to the list
             pingIDs.append(id)
         end
-    while end 
+    while id ~= nil end 
 
     -- update idle turtle status
     for i=1, #pingIDs do
@@ -95,11 +99,19 @@ local function openOperationFile(filename) -- opens the last file and checks if 
     return {file, previousOperation}
 end
 
-local function triangulate()
+local function triangulate() -- returns GPS coordinates
     repeat
         x, y, z = gps.locate(5);
     until (x ~= nil);
     return x, y, z;
+end
+
+local function matchID(table1, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
+    for i=startingIndex, #table1 do
+        if (id == table1[i]) then
+            return i
+        end
+    end
 end
 
 -- function list to return
@@ -110,5 +122,6 @@ return {
     isTable = isTable,
     updateTurtles = updateTurtles,
     openOperationFile = openOperationFile,
-    triangulate = triangulate
+    triangulate = triangulate,
+    matchID = matchID
 }
