@@ -80,19 +80,26 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
     return {turtles, turtlesIdle}
 end
 
-local function openOperationFile() -- opens the last file and checks if it was completed, otherwise it creates a new one
+local function openOperationFile(filename) -- opens the last file and checks if it was completed, otherwise it creates a new one
     local file = nil
     local previousOperation = false
     if (fs.exists("/sauron/mining/") == false) then -- checks if doesnt directory exist
         fs.makeDir("/sauron/mining/")
     else -- if directory does exist
-        if (fs.exists("/sauron/mining/operation.txt") == true) then -- checks if file exists directory exist
+        if (fs.exists("/sauron/mining/" .. filename) == true) then -- checks if file exists directory exist
             previousOperation = true
         end
     end
 
-    file = fs.open("sauron/mining/operation.txt", "r+")
+    file = fs.open("/sauron/mining/" .. filename, "r+")
     return {file, previousOperation}
+end
+
+local function triangulate()
+    repeat
+        x, y, z = gps.locate(5);
+    until (x ~= nil);
+    return x, y, z;
 end
 
 -- function list to return
@@ -102,5 +109,6 @@ return {
     monitorInit = monitorInit,
     isTable = isTable,
     updateTurtles = updateTurtles,
-    openOperationFile = openOperationFile
+    openOperationFile = openOperationFile,
+    triangulate = triangulate
 }

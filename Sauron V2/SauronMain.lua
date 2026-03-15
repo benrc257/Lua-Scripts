@@ -4,12 +4,14 @@ func = require("functions")
 -- variables
 protocol = "sauron"; -- rednet protocol
 turtleProtocol = "sauronTurtles"
+miningProtocol = "sauronMiners"
 tankerProtocol = "sauronTankers"
 supplierProtocol = "sauronSuppliers"
+completed = false -- switch to true when mining is over
 label = "EYE"; -- computer label
 turtles = {}; -- list of turtles
 turtlesIdle = {}; -- list of idle turtles
-chunkSize = 16 -- size of mined chunks
+local chunkSize = 16 -- size of mined chunks
 local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
 local file = nil -- used for operation file
@@ -33,7 +35,7 @@ turtles, turtlesIdle = func.updateTurtles(turtleProtocol, turtles, turtlesIdle)
 
 -- attempt to recover previous operation
 print("\nSauron boot sequence complete. Searching for previous operations...")
-file, previousOperation = func.openOperationFile()
+file, previousOperation = func.openOperationFile("operation.txt")
 
 if (previousOperation == false) then -- if no previous operation found, request coordinates
 
@@ -154,9 +156,9 @@ for i=1, length do -- chunks are partioned in order from bottom left to top righ
 end
 
 -- launch helper programs
-multishell.setTitle(multishell.launch(_ENV,"SauronTank.lua", protocol, tankerProtocol), "SauronTank")
-multishell.setTitle(multishell.launch(_ENV,"SauronSupply.lua", protocol, supplierProtocol), "SauronSupply")
-multishell.setTitle(multishell.launch(_ENV,"SauronTurtles.lua", protocol, turtleProtocol), "SauronTurtles")
+multishell.setTitle(multishell.launch(_ENV,"SauronTank.lua"), "SauronTank")
+multishell.setTitle(multishell.launch(_ENV,"SauronSupply.lua"), "SauronSupply")
+multishell.setTitle(multishell.launch(_ENV,"SauronTurtles.lua"), "SauronTurtles")
 
 
 
