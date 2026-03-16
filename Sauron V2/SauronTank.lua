@@ -11,7 +11,6 @@ multishell.setTitle(multishell.getCurrent(), "SauronTank")
 -- vars
 local chests = {}
 fuelchest = false
-local needsFuel = "needFuel" -- send from turtles for fuel
 
 -- find fuel chest
 repeat

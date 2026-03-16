@@ -9,11 +9,14 @@ turtleProtocol = "sauronTurtles"
 miningProtocol = "sauronMiners"
 tankerProtocol = "sauronTankers"
 supplierProtocol = "sauronSuppliers"
+dockProtocol = "sauronDocking"
 completed = false -- switch to true when mining is over
 label = "EYE"; -- computer label
 turtles = {}; -- list of turtles
 turtlesIdle = {}; -- list of idle turtles
 fuelSource = "minecraft:dried_kelp_block" -- change if you want to swap fuel sources
+needsSupply = "needSupply" -- send from turtles for supply
+needsFuel = "needFuel" -- send from turtles for fuel
 local chunkSize = 16 -- size of mined chunks
 local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
@@ -28,6 +31,9 @@ multishell.setTitle(multishell.getCurrent(), "SauronMain")
 func.rednetInit(label)
 func.rednetHost(protocol, label)
 func.rednetHost(turtleProtocol, label)
+func.rednetHost(dockingProtocol, label)
+func.rednetHost(supplierProtocol, label)
+func.rednetHost(tankerProtocol, label)
 
 -- display setup
 monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight = func.monitorInit()
