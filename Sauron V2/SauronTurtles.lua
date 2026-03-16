@@ -77,5 +77,5 @@ repeat
         elseif message ~= nil then
             goto receiving
         end
-    until id == nil end
-until completed == true end
+    until (id == nil)
+until (completed == true)

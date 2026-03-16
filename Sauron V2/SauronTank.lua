@@ -26,7 +26,7 @@ repeat
         end
     end
     ::exitchests::
-until fuelchest ~= false end
+until (fuelchest ~= false)
 
 
 -- refueling handling
@@ -36,18 +36,18 @@ repeat
     repeat -- wait for a fuel request
         id, message = nil
         id, message = rednet.receive(tankerProtocol, 10)
-    until func.isTable(message) == true and message[1] == needsFuel end
+    until (func.isTable(message) == true and message[1] == needsFuel)
 
     local tankerID = 0
     repeat -- find a free tanker
         if ((tankerID+1) > #turtleJobs) then tankerID = 0 end -- resets to zero when ID bigger than table
         tankerID = func.matchID(turtleJobs, 2, tankerID+1)
-    until turtlesIdle[tankerID] == true end
+    until (turtlesIdle[tankerID] == true)
 
     message.append(maxheight)
 
     -- contact tankers with coordinates
-    rednet.send(tankerID, message, tankerProtocol)
+    rednet.send(tankerID, message, tankerProtocol)  -- tanker receives {needsFuel, {x,y,z}, maxheight}
     turtlesIdle[tankerID] == false
 
-until completed == true end
+until (completed == true)

@@ -4,117 +4,72 @@ func = require("turtlefunctions")
 -- name tab
 multishell.setTitle(multishell.getCurrent(), "MinionMiner")
 
+-- inital docking
+local dockedmodem = peripheral.find("modem")
+for i=1, #dockedmodem do -- find the wired modem
+    if dockedmodem[i].isWireless() == true then
+        dockedmodem = dockedmodem[i]
+    end
+end
+
+--prepare docking message
+local nameLocal = dockedmodem.getNameLocal()
+local dockingmessage = {dockingRequest, "miner", nameLocal}
+local askForFuel = false
+if ((turtle.getItemDetail(1)).count <= 1) then
+    askForFuel = true
+end
+dockingmessage.append(askForFuel)
+
+-- find docking computer
+local dockingID = nil
+repeat -- find supply computer id
+    tankerID = rednet.lookup(dockingProtocol, centralComputer)
+    os.sleep(0.05)
+until (dockingID ~= nil)
+
+-- send and wait
+rednet.send(dockingID, dockingmessage, dockProtocol)
+repeat -- repeats until docking is complete
+    local received = false
+    local id, message = rednet.receive(dockingProtocol, 2)
+    if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
+        received == true
+    end
+until (received == true)
+
 repeat
+    -- get current coordinates
     print("\nTriangulating position...")
-    x, y, z = func.triangulate() 
+    local xt, yt, zt = func.triangulate()
+    coords = {x=xt,y=yt,z=zt}
     print("\nPosition found.")
 
+    -- wait for message, responding when pinged for idle
     print("\nWaiting for coordinates...")
     repeat
         local received = false
-        id, message = rednet.receive(turtleProtocol, 10) -- {"coords", x, y, z, depth, length, width}
+        id, message = rednet.receive(turtleProtocol, 10)
         if message == idlecheck then
             rednet.send(id, idleresponse, turtleProtocol)
-        elseif func.isTable(message) == true then
+        elseif message == "completed" then -- completed signal sent, skip to end of loop
+            completed = true
+            goto complete
+        elseif func.isTable(message) == true then -- coordinates received {{x1,y1,z1},{x2,y2,z2},maxheight}
             received == true
         end
-    until received == true end
+    until (received == true)
     print ("\nCoordinates received...")
-    turtle.refuel()
 
-    print ("\nFueled. Ascending...")
-    for i=y, (maxheight-label) do
-        repeat turtle.digUp() until (turtle.up()) 
-        y=y+1 
-    end
+    maxheight = message[3]-label
+    coordsC1 = {x=message[1][1], y=message[1][2], z=message[1][3]}
+    coordsC2 = {x=message[2][1], y=message[2][2], z=message[2][3]}
 
-    oldX = x 
-    oldZ = z 
-    repeat turtle.dig() until (turtle.forward()) 
-    x, y, z = triangulate() 
-    if (oldX ~= x) then -- 1 = north, 2 = east, 3 = south, 4 = west
-        if (x > oldX) then facing = 2  else facing = 4  end
-    else
-        if (z > oldZ) then facing = 3  else facing = 1  end
-    end
-    turtle.back()
+    facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
+    func.mineChunk(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer)
+    facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
+    ::complete::
+until (completed == true)
 
-    if (x ~= coords[2]) then -- going to destination X
-        if (coords[2] < x) then facing = face(facing, 4)  else facing = face(facing, 2)  end
-        while (x ~= coords[2]) do
-            repeat turtle.dig() until (turtle.forward()) 
-            if (facing == 4) then
-                x=x-1 
-            else
-                x=x+1 
-            end
-        end
-    end
-
-    if (z ~= coords[4]) then -- going to destination Z
-        if (coords[4] < z) then facing = face(facing, 1)  else facing = face(facing, 3)  end
-        while (z ~= coords[4]) do
-            repeat turtle.dig() until (turtle.forward()) 
-            if (facing == 1) then
-                z=z-1 
-            else
-                z=z+1 
-            end
-        end
-    end
-
-    if (y ~= coords[3]) then -- going to destination Y
-        while (y ~= coords[3]) do
-            repeat turtle.digDown() until (turtle.down()) 
-            y=y-1 
-        end
-    end
-
-    
-    for i=1, coords[5] do -- {"coords", x, y, z, depth, length, width}
-        refuel(x, y, z)
-        for j=1, coords[6] do
-            for k=2, coords[7] do
-                if (j%2) then
-                    facing = face(facing, 3)  -- odd
-                    z=z+1 
-                else
-                    facing = face(facing, 1)  -- even
-                    z=z-1 
-                end
-                fillLiquid()
-                repeat turtle.dig() until (turtle.forward()) 
-            end
-            if (j~=coords[6]) then
-                facing = face(facing, 4) 
-                repeat turtle.dig() until (turtle.forward()) 
-                x=x-1 
-            end
-        end
-        if (coords[6]%2) then
-            facing = face(facing, 1) 
-            for i=1, coords[7] do
-                turtle.forward()
-                z=z-1 
-            end
-            facing = face(facing, 2) 
-            for i=1, coords[6] do 
-                turtle.forward()
-                x=x+1 
-            end
-        else
-            facing = face(facing, 2) 
-            for i=1, coords[6] do 
-                turtle.forward()
-                x=x+1 
-            end
-        end
-        if (i~=coords[5]) then
-            repeat turtle.digDown() until (turtle.down()) 
-            y=y-1 
-        end
-        dropOff(x, y, z)
-    end
-    local gemstone = rednet.lookup(protocol, "gemstone")
-    rednet.send(gemstone, "free")
-until (false) 
+-- return home
+func.goTo(coords, startingCoords, maxheight, needsFuel, centralComputer)

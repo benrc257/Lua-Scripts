@@ -4,7 +4,7 @@ local function rednetInit(label)  -- Opens rednet on the computer and returns th
     print("\nAttempting to find modems...")
     repeat -- repeatedly search for modems and open rednet until both are complete
         local modems = peripheral.find("modem", rednet.open);
-    until #modems > 0 and rednet.isOpen() end
+    until (#modems > 0 and rednet.isOpen())
     print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
     print("\nComputer Label (".. label ..") successfully set.")
@@ -90,7 +90,7 @@ local function openOperationFile(filename) -- opens the last file and checks if 
     if (fs.exists("/sauron/mining/") == false) then -- checks if doesnt directory exist
         fs.makeDir("/sauron/mining/")
     else -- if directory does exist
-        if (fs.exists("/sauron/mining/" .. filename) == true) then -- checks if file exists directory exist
+        if (fs.exists("/sauron/mining/" .. filename) == true) then -- checks if file exists
             previousOperation = true
         end
     end
@@ -99,10 +99,19 @@ local function openOperationFile(filename) -- opens the last file and checks if 
     return {file, previousOperation}
 end
 
+local function closeOperationFile(file, filename) -- opens the last file and checks if it was completed, otherwise it creates a new one
+    if (fs.exists("/sauron/mining/") == true) then -- if directory does exist
+        if (fs.exists("/sauron/mining/" .. filename) == true) then -- checks if file exists
+            file.close()
+            fs.delete("/sauron/mining/" .. filename)
+        end
+    end
+end
+
 local function triangulate() -- returns GPS coordinates
     repeat
         x, y, z = gps.locate(5);
-    until (x ~= nil);
+    until (x ~= nil)
     return x, y, z;
 end
 
@@ -123,6 +132,7 @@ return {
     isTable = isTable,
     updateTurtles = updateTurtles,
     openOperationFile = openOperationFile,
+    closeOperationFile = closeOperationFile,
     triangulate = triangulate,
     matchID = matchID
 }

@@ -9,7 +9,7 @@ func = require("functions")
 multishell.setTitle(multishell.getCurrent(), "SauronDock")
 
 -- note for minions: they will need to attach to a modem bay and then use modem.getNameLocal(), then transmit that name via rednet to this computer so it can send fuel.
--- should look like message[1] = dockingRequest, message[2] = supply or tanker, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
+-- should look like message[1] = dockingRequest, message[2] = supply or tanker or miner, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
 
 -- refueling handling
 repeat
@@ -18,7 +18,7 @@ repeat
     repeat -- wait for a docking request
         id, message = nil
         id, message = rednet.receive(dockingProtocol, 10)
-    until isTable(message) == true and message[1] == dockingRequest end
+    until (isTable(message) == true and message[1] == dockingRequest)
 
     -- gets the peripheral name for the docked turtle
     local turtlePeripheral = message[3]
@@ -33,12 +33,12 @@ repeat
                     local item = turtlePeripheral.getItemDetail(i)
                     local itemCount = item.count
                     local itemsMoved = turtlePeripheral.pushItems(supplychest, i)
-                until itemCount == itemsMoved end
+                until (itemCount == itemsMoved)
             end
-        until (turtlePeripheral.getItemDetail(inventorySize)) == nil end
+        until ((turtlePeripheral.getItemDetail(inventorySize)) == nil)
         
         if message[4] == true then -- if supplier needs fuel
-            repeat -- repeats until the first slot of the tanker is full
+            repeat -- repeats until the first slot of the supplier is full
                 
                 local fuelItems = fuelchest.list()
                 for slot, item in pairs(fuelItems) do -- used to only pull from slots with items
@@ -48,7 +48,7 @@ repeat
                     end
                 end
 
-            until (turtlePeripheral.getItemDetail(1)).count == 64 end
+            until ((turtlePeripheral.getItemDetail(1)).count == 64)
         end
 
     elseif message[2] == "tanker" then
@@ -63,7 +63,23 @@ repeat
                     end
                 end
             end
-        until (turtlePeripheral.getItemDetail(inventorySize)).count == 64 end
+        until ((turtlePeripheral.getItemDetail(inventorySize)).count == 64)
+
+    elseif message[2] == miner then
+
+        if message[4] == true then -- if miner needs fuel
+            repeat -- repeats until the first slot of the miner is full
+                
+                local fuelItems = fuelchest.list()
+                for slot, item in pairs(fuelItems) do -- used to only pull from slots with items
+                    local itemsMoved = turtlePeripheral.pullItems(fuelChest, slot)
+                    if itemsMoved == 0 or itemsMoved == 64 then -- if a full stack or nothing was moved, move on
+                        break
+                    end
+                end
+
+            until ((turtlePeripheral.getItemDetail(1)).count == 64)
+        end
 
     end
 
@@ -71,4 +87,4 @@ repeat
     rednet.send(id, doneDocking, dockingProtocol)
     turtlesIdle[id] == true
 
-until completed == true end
+until completed == true

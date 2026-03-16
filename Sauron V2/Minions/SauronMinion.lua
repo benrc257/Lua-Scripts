@@ -5,7 +5,7 @@ func = require("turtlefunctions")
 multishell.setTitle(multishell.getCurrent(), "MinionMain")
 
 -- vars
-id, coords = nil
+completed = false
 
 -- rednet vars
 centralComputer = "EYE"
@@ -35,21 +35,25 @@ func.rednetHost(dockingProtocol, label)
 func.rednetHost(supplierProtocol, label)
 func.rednetHost(tankerProtocol, label)
 
+-- record starting position
+print("\nTriangulating starting position...")
+xstart, ystart, zstart = func.triangulate()
+startingCoords = {x=xstart, y=ystart, z=zstart}
+
+-- acquire job
 job = nil
 repeat
     local id, message = rednet.receive(turtleProtocol, 10)
     if (message == jobSearch) then
         rednet.send(id, needsJob, turtleProtocol)
-        repeat
-            id, message = rednet.receive(turtleProtocol, 10)
-            if (message == minerJob or message == tankerJob or message == supplierJob) then
-                job = message
-            end
-        until end
+        id, message = rednet.receive(turtleProtocol, 20)
+        if (message == minerJob or message == tankerJob or message == supplierJob) then
+            job = message
+        end
     end
-until job ~= nil end
+until (job ~= nil)
 
--- enables correct program
+-- enables designated program
 if (job == minerJob) then
     multishell.launch(_ENV,"MinionMiner.lua")
 elseif (job == tankerJob) then
@@ -58,6 +62,8 @@ elseif (job == supplierJob) then
     multishell.launch(_ENV,"MinionSupplier.lua")
 end
 
-
+repeat
+    os.sleep(0.01) -- wait until program is complete
+until (completed == true)
 
 

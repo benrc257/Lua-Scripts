@@ -13,6 +13,7 @@ turtlesIdle = {}; -- list of idle turtles
 turtleJobs = {} -- 1 - miner, 2 - tanker, 3 - supplier
 chunkSize = 16 -- size of mined chunks
 chunksComplete = 1 -- chunks left
+local filename = "operations.txt" -- used for save file
 local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
 local file = nil -- used for operation file
@@ -57,7 +58,7 @@ turtles, turtlesIdle = func.updateTurtles(turtleProtocol, turtles, turtlesIdle)
 
 -- attempt to recover previous operation
 print("\nSauron boot sequence complete. Searching for previous operations...")
-file, previousOperation = func.openOperationFile("operation.txt")
+file, previousOperation = func.openOperationFile(filename)
 
 if (previousOperation == false) then -- if no previous operation found, request coordinates
 
@@ -81,7 +82,7 @@ if (previousOperation == false) then -- if no previous operation found, request 
         chunkSize = read()
         print("\nContinue? (Y/N)")
         local confirm = read()
-    until (confirm == "y" or confirm == "Y") end
+    until (confirm == "y" or confirm == "Y")
 
     -- write new operation coords to file
     file.write(x1 .. "\n" .. y1 .. "\n" .. z1 .. "\n" .. x2 .. "\n" .. y2 .. "\n" .. z2 .. "\n" .. maxheight .. "\n")
@@ -240,7 +241,7 @@ repeat
     repeat -- find a free miner
         if ((minerID+1) > #turtleJobs) then minerID = 0 end -- resets to zero when ID bigger than table
         minerID = func.matchID(turtleJobs, 1, minerID+1)
-    until turtlesIdle[minerID] == true end
+    until turtlesIdle[minerID] == true
 
     local nextCoordinates = {corners[chunksComplete][1],corners[chunksComplete][2],maxheight} -- THIS IS THE MESSAGE THE TURTLES RECEIVE
 
@@ -254,11 +255,16 @@ repeat
     paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
     term.redirect(old)
     chunksComplete = chunksComplete+1
-until chunksComplete > chunks end
+    file.write(nextCoordinates[1][1] .. "\n" .. nextCoordinates[1][2] .. "\n" .. nextCoordinates[1][3] .. "\n" .. nextCoordinates[2][1] .. "\n" .. nextCoordinates[2][2] .. "\n" .. nextCoordinates[2][3] .. "\n" .. maxheight .. "\n")
+    file.flush()
+until chunksComplete > chunks
+
+-- close save file
+closeOperationFile(file, filename)
 
 repeat -- wait until all turtles are free
     os.sleep(10)
-until matchID(turtlesIdle, false, 1) == 0 end
+until (matchID(turtlesIdle, false, 1) == 0)
 
 -- show complete on monitor
 monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
@@ -266,12 +272,8 @@ monitor.setBackgroundColour(colors.black)
 monitor.clearLine()
 monitor.write("Complete!")
 
--- broadcast completed on all channels
-func.broadcast("completed", protocol)
+-- broadcast completed to turtles
 func.broadcast("completed", turtleProtocol)
-func.broadcast("completed", dockingProtocol)
-func.broadcast("completed", supplierProtocol)
-func.broadcast("completed", tankerProtocol)
 
 -- update completed flag
 completed = true
