@@ -36,16 +36,18 @@ until supplychest ~= false end
 repeat
 
     local id, message = nil
-    do -- wait for a fuel request
+    repeat -- wait for a fuel request
         id, message = nil
         id, message = rednet.receive(tankerProtocol, 10)
-    until isTable(message) == true and message[1] == needsSupply end
+    until func.isTable(message) == true and message[1] == needsSupply end
 
     local supplierID = 0
-    do -- find a free tanker
+    repeat -- find a free tanker
         if ((supplierID+1) > #turtleJobs) then supplierID = 0 end -- resets to zero when ID bigger than table
-        supplierID = matchID(turtleJobs, 2, supplierID+1)
+        supplierID = func.matchID(turtleJobs, 3, supplierID+1)
     until turtlesIdle[supplierID] == true end
+
+    message.append(maxheight)
 
     -- contact tankers with coordinates
     rednet.send(supplierID, message, supplierProtocol)

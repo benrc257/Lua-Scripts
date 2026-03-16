@@ -14,10 +14,12 @@ local responded = "needjob"
 local miner = "miner"
 local supplier = "supplier"
 local tanker = "tanker"
-turtleJobs = {} -- 1 - miner, 2 - tanker, 3 - supplier
 local newTurtles = {}
 local newTurtlesIdle = {}
 local newTurtleJobs = {}
+newTurtles[0] = false
+newTurtlesIdle[0] = false
+newTurtleJobs[0] = false
 
 -- constantly checking for new turtles or idle turtles
 repeat
@@ -40,34 +42,34 @@ repeat
     -- checking for idle turtles without jobs
     rednet.broadcast(broadcasted, turtleProtocol)
     local id, message = nil
-    do -- assigns each of the turtles jobs
+    repeat -- assigns each of the turtles jobs
         ::receiving::
         id, message = rednet.receive(turtleProtocol, 10)
         if message == responded then
 
             if (tankerjobs == 0) then -- 0 tankers
                 rednet.send(id, tanker)
-                turtleJobs[matchID(turtles, id, 1)] = 2
+                turtleJobs[func.matchID(turtles, id, 1)] = 2
 
             elseif (supplyingjobs == 0) then -- 0 suppliers
                 rednet.send(id, supplier)
-                turtleJobs[matchID(turtles, id, 1)] = 3
+                turtleJobs[func.matchID(turtles, id, 1)] = 3
 
             elseif (miningjobs == 0) then -- 0 miners
                 rednet.send(id, mining)
-                turtleJobs[matchID(turtles, id, 1)] = 1
+                turtleJobs[func.matchID(turtles, id, 1)] = 1
 
             elseif (miningjobs/3 > tankerjobs) then -- add a new tanker for a set
                 rednet.send(id, tanker)
-                turtleJobs[matchID(turtles, id, 1)] = 2
+                turtleJobs[func.matchID(turtles, id, 1)] = 2
 
             elseif (miningjobs/3 > supplyingjobs) then -- add a new supplier for a set
                 rednet.send(id, supplier)
-                turtleJobs[matchID(turtles, id, 1)] = 3
+                turtleJobs[func.matchID(turtles, id, 1)] = 3
 
             else -- adds up miners until the next new set of three
                 rednet.send(id, mining)
-                turtleJobs[matchID(turtles, id, 1)] = 1
+                turtleJobs[func.matchID(turtles, id, 1)] = 1
                 
             end
 

@@ -2,13 +2,13 @@
 
 local function rednetInit(label)  -- Opens rednet on the computer and returns the modem peripheral
     print("\nAttempting to find modems...")
-    do -- repeatedly search for modems and open rednet until both are complete
+    repeat -- repeatedly search for modems and open rednet until both are complete
         local modems = peripheral.find("modem", rednet.open);
     until #modems > 0 and rednet.isOpen() end
     print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
     print("\nComputer Label (".. label ..") successfully set.")
-    return {modems}
+    return {modems, label}
 end
 
 local function rednetHost(protocol, label) -- Hosts rednet under the given label and protocol, making the pc visible upon lookup
@@ -58,15 +58,15 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
     end
 
     -- pings idle turtles and creates a list
-    rednet.broadcast("idlecheck", turtleProtocol)
+    rednet.broadcast(idlecheck, turtleProtocol)
 
     -- checking pings
     local pingIDs = {}
-    do -- receive pings and add them to the list
+    repeat -- receive pings and add them to the list
         local id = nil
         local message = nil
         id, message = rednet.receive(turtleProtocol, 1)
-        if (message == "idle") then -- if idle message was received add it to the list
+        if (message == idleresponse) then -- if idle message was received add it to the list
             pingIDs.append(id)
         end
     while id ~= nil end 
@@ -106,12 +106,13 @@ local function triangulate() -- returns GPS coordinates
     return x, y, z;
 end
 
-local function matchID(table1, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
-    for i=startingIndex, #table1 do
-        if (id == table1[i]) then
+local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
+    for i=startingIndex, #table do
+        if (id == table[i]) then
             return i
         end
     end
+    return 0
 end
 
 -- function list to return

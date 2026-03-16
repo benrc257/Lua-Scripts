@@ -3,32 +3,45 @@
 -- libs
 func = require("functions")
 
+-- name tab
+multishell.setTitle(multishell.getCurrent(), "SauronMain")
+
 -- variables
-protocol = "sauron"; -- rednet protocol
-turtleProtocol = "sauronTurtles"
-miningProtocol = "sauronMiners"
-tankerProtocol = "sauronTankers"
-supplierProtocol = "sauronSuppliers"
-dockProtocol = "sauronDocking"
 completed = false -- switch to true when mining is over
-label = "EYE"; -- computer label
 turtles = {}; -- list of turtles
 turtlesIdle = {}; -- list of idle turtles
-fuelSource = "minecraft:dried_kelp_block" -- change if you want to swap fuel sources
-needsSupply = "needSupply" -- send from turtles for supply
-needsFuel = "needFuel" -- send from turtles for fuel
-local chunkSize = 16 -- size of mined chunks
+turtleJobs = {} -- 1 - miner, 2 - tanker, 3 - supplier
+chunkSize = 16 -- size of mined chunks
+chunksComplete = 1 -- chunks left
 local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
 local file = nil -- used for operation file
 local previousOperation = nil -- used to tell if there was a previous incomplete mining operation
 local originX, originY, originZ = nil -- used for starting coords
 
+-- setting vars
+fuelSource = "minecraft:dried_kelp_block" -- change if you want to swap fuel sources
+
+-- rednet vars
+label = "EYE"; -- computer label
+protocol = "sauron"; -- rednet protocol
+turtleProtocol = "sauronTurtles"
+miningProtocol = "sauronMiners"
+tankerProtocol = "sauronTankers"
+supplierProtocol = "sauronSuppliers"
+dockProtocol = "sauronDocking"
+needsSupply = "needSupply" -- send from turtles for supply
+needsFuel = "needFuel" -- send from turtles for fuel
+dockingRequest = "needDocking" -- send from turtles for docking
+doneDocking = "doneDocking" -- send from docking computer to end docking
+idlecheck = "idlecheck"
+idleresponse = "idle"
+
 -- name tab
 multishell.setTitle(multishell.getCurrent(), "SauronMain")
 
 -- initializing rednet
-func.rednetInit(label)
+modem = func.rednetInit(label)
 func.rednetHost(protocol, label)
 func.rednetHost(turtleProtocol, label)
 func.rednetHost(dockingProtocol, label)
@@ -48,7 +61,7 @@ file, previousOperation = func.openOperationFile("operation.txt")
 
 if (previousOperation == false) then -- if no previous operation found, request coordinates
 
-    do
+    repeat
         print("\nNo previous operation found. Requesting coordinates...")
         print("\nEnter the first X coordinate: ")
         x1 = read()
@@ -143,12 +156,45 @@ end
 -- assign corners
 corners = {}
 local chunksPartioned = 1
-for i=1, length do -- chunks are partioned in order from bottom left to top right
+for i=1, length-1 do -- chunks are partioned in order from bottom left to top right
 
     -- calculates corner X and Y coords
     local corner1X = originX+((i-1)*chunkSize)
     local corner1Y = originY
     local corner2X = originX+(i*(chunkSize-1))
+    local corner2Y = originY-depth
+
+    for j=1, width-1 do -- for width
+        -- calculates corner Z coords
+        local corner1Z = originZ+((j-1)*chunkSize)
+        local corner2Z = originZ+(j*(chunkSize-1))
+
+        -- inserts the corner coords into the array
+        corners[chunksPartioned] = {}
+        corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
+        corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+        chunksPartioned = chunksPartioned+1
+    end
+
+    for j=width, width do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
+        -- calculates corner Z coords
+        local corner1Z = originZ+((j-2)*chunkSize)+(width%chunkSize)
+        local corner2Z = originZ+((j-1)*(chunkSize-1))+(width%chunkSize)
+
+        -- inserts the corner coords into the array
+        corners[chunksPartioned] = {}
+        corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
+        corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+        chunksPartioned = chunksPartioned+1
+    end
+end
+
+for i=length, length do -- handling of top edge chunks
+
+    -- calculates corner X and Y coords
+    local corner1X = originX+((i-1)*chunkSize)
+    local corner1Y = originY
+    local corner2X = originX+((i-1)*(chunkSize-1))+(originX%chunkSize)
     local corner2Y = originY-depth
 
     for j=1, width do -- for width
@@ -162,7 +208,25 @@ for i=1, length do -- chunks are partioned in order from bottom left to top righ
         corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
         chunksPartioned = chunksPartioned+1
     end
+    for j=width, width do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
+        -- calculates corner Z coords
+        local corner1Z = originZ+((j-1)*chunkSize)
+        local corner2Z = originZ+((j-1)*(chunkSize-1))+(originZ%chunkSize)
+
+        -- inserts the corner coords into the array
+        corners[chunksPartioned] = {}
+        corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
+        corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+        chunksPartioned = chunksPartioned+1
+    end
 end
+
+-- monitor setup
+monitor.setCursorPos(marginW, ((mheight/2)-(mheight*.3)))
+monitor.write("Progress: ")
+old = term.redirect(monitor)
+paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.3)), colors.lightGray)
+term.redirect(old)
 
 -- launch helper programs
 multishell.launch(_ENV,"SauronTank.lua") -- contacts tankers
@@ -170,32 +234,57 @@ multishell.launch(_ENV,"SauronSupply.lua") -- contacts suppliers
 multishell.launch(_ENV,"SauronTurtles.lua") -- updates turtle list
 multishell.launch(_ENV,"SauronDock.lua") -- docks turtles
 
+repeat
+
+    local minerID = 0
+    repeat -- find a free miner
+        if ((minerID+1) > #turtleJobs) then minerID = 0 end -- resets to zero when ID bigger than table
+        minerID = func.matchID(turtleJobs, 1, minerID+1)
+    until turtlesIdle[minerID] == true end
+
+    local nextCoordinates = {corners[chunksComplete][1],corners[chunksComplete][2],maxheight} -- THIS IS THE MESSAGE THE TURTLES RECEIVE
 
 
+    -- contact tankers with coordinates
+    rednet.send(minerID, nextCoordinates, tankerProtocol)
+    turtlesIdle[minerID] == false
 
+    -- progress bar
+    old = term.redirect(monitor)
+    paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
+    term.redirect(old)
+    chunksComplete = chunksComplete+1
+until chunksComplete > chunks end
 
+repeat -- wait until all turtles are free
+    os.sleep(10)
+until matchID(turtlesIdle, false, 1) == 0 end
 
-
-
-
-
-
-
-
-
--- old monitor stuff
-
-monitor.setCursorPos(marginW, ((mheight/2)-(mheight*.3)))
-monitor.write("Progress: ")
-old = term.redirect(monitor)
-paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), (mwidth-marginW), ((mheight/2)+(mheight*.3)), colors.lightGray)
-term.redirect(old)
-
-old = term.redirect(monitor)
-paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
-term.redirect(old)
-
+-- show complete on monitor
 monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))
 monitor.setBackgroundColour(colors.black)
 monitor.clearLine()
 monitor.write("Complete!")
+
+-- broadcast completed on all channels
+func.broadcast("completed", protocol)
+func.broadcast("completed", turtleProtocol)
+func.broadcast("completed", dockingProtocol)
+func.broadcast("completed", supplierProtocol)
+func.broadcast("completed", tankerProtocol)
+
+-- update completed flag
+completed = true
+
+
+
+
+
+
+
+
+
+
+
+
+

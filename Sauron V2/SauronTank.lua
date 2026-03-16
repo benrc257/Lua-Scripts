@@ -29,22 +29,22 @@ repeat
 until fuelchest ~= false end
 
 
--- note for minions: they will need to attach to a modem bay and then use modem.getNameLocal(), then transmit that name via rednet to this computer so it can send fuel.
-
 -- refueling handling
 repeat
 
     local id, message = nil
-    do -- wait for a fuel request
+    repeat -- wait for a fuel request
         id, message = nil
         id, message = rednet.receive(tankerProtocol, 10)
-    until isTable(message) == true and message[1] == needsFuel end
+    until func.isTable(message) == true and message[1] == needsFuel end
 
     local tankerID = 0
-    do -- find a free tanker
+    repeat -- find a free tanker
         if ((tankerID+1) > #turtleJobs) then tankerID = 0 end -- resets to zero when ID bigger than table
-        tankerID = matchID(turtleJobs, 2, tankerID+1)
+        tankerID = func.matchID(turtleJobs, 2, tankerID+1)
     until turtlesIdle[tankerID] == true end
+
+    message.append(maxheight)
 
     -- contact tankers with coordinates
     rednet.send(tankerID, message, tankerProtocol)
