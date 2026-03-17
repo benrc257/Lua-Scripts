@@ -16,15 +16,17 @@ end
 local nameLocal = dockedmodem.getNameLocal()
 local dockingmessage = {dockingRequest, "supply", nameLocal}
 local askForFuel = false
-if ((turtle.getItemDetail(1)).count <= 1) then
-    askForFuel = true
+if (turtle.getItemDetail(1) ~= nil) then
+    if ((turtle.getItemDetail(1)).count <= 1) then
+        askForFuel = true
+    end
 end
-dockingmessage.append(askForFuel)
+table.insert(dockingmessage,askForFuel)
 
 -- find docking computer
 local dockingID = nil
 repeat -- find docking computer id
-    tankerID = rednet.lookup(dockingProtocol, centralComputer)
+    tankerID = rednet.lookup(dockProtocol, centralComputer)
     os.sleep(0.05)
 until (dockingID ~= nil)
 
@@ -32,9 +34,9 @@ until (dockingID ~= nil)
 rednet.send(dockingID, dockingmessage, dockProtocol)
 repeat -- repeats until docking is complete
     local received = false
-    local id, message = rednet.receive(dockingProtocol, 2)
+    local id, message = rednet.receive(dockProtocol, 2)
     if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-        received == true
+        received = true
     end
 until (received == true)
 
@@ -52,7 +54,7 @@ repeat
         id, message = rednet.receive(supplyProtocol, 2)
         local id2, message2 = rednet.receive(turtleProtocol, 2)
         if func.isTable(message) == true then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-            received == true
+            received = true
         elseif message2 == "completed" then -- completed signal sent, skip to end of loop
             completed = true
             goto complete
@@ -77,7 +79,7 @@ repeat
     -- should look like message[1] = dockingRequest, message[2] = supply or tanker, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
 
     -- docking
-    local dockedmodem = peripheral.find("modem")
+    dockedmodem = peripheral.find("modem")
     for i=1, #dockedmodem do -- find the wired modem
         if dockedmodem[i].isWireless() == true then
             dockedmodem = dockedmodem[i]
@@ -85,18 +87,20 @@ repeat
     end
 
     --prepare docking message
-    local nameLocal = dockedmodem.getNameLocal()
-    local dockingmessage = {dockingRequest, "supply", nameLocal}
-    local askForFuel = false
-    if ((turtle.getItemDetail(1)).count <= 1) then
-        askForFuel = true
+    nameLocal = dockedmodem.getNameLocal()
+    dockingmessage = {dockingRequest, "supply", nameLocal}
+    askForFuel = false
+    if (turtle.getItemDetail(1) ~= nil) then
+        if ((turtle.getItemDetail(1)).count <= 1) then
+            askForFuel = true
+        end
     end
-    dockingmessage.append(askForFuel)
+    table.insert(dockingmessage,askForFuel)
 
     -- find docking computer
-    local dockingID = nil
+    dockingID = nil
     repeat -- find docking computer id
-        tankerID = rednet.lookup(dockingProtocol, centralComputer)
+        tankerID = rednet.lookup(dockProtocol, centralComputer)
         os.sleep(0.05)
     until (dockingID ~= nil)
 
@@ -104,15 +108,15 @@ repeat
     rednet.send(dockingID, dockingmessage, dockProtocol)
     repeat -- repeats until docking is complete
         local received = false
-        local id, message = rednet.receive(dockingProtocol, 2)
+        local id, message = rednet.receive(dockProtocol, 2)
         if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-            received == true
+            received = true
         end
     until (received == true)
 
-    ::complete::
+    
 until (completed == true)
-
+::complete::
 -- return home
 coordsC1 = {x=xstart,y=ystart,z=zstart}
 func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)

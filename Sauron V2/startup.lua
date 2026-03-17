@@ -45,16 +45,18 @@ multishell.setTitle(multishell.getCurrent(), "SauronMain")
 modem = func.rednetInit(label)
 func.rednetHost(protocol, label)
 func.rednetHost(turtleProtocol, label)
-func.rednetHost(dockingProtocol, label)
+func.rednetHost(miningProtocol, label)
+func.rednetHost(dockProtocol, label)
 func.rednetHost(supplierProtocol, label)
 func.rednetHost(tankerProtocol, label)
 
 -- display setup
-monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight = func.monitorInit()
+monitor, mwidth, mheight, resolution, marginW, marginH = func.monitorInit()
 
 -- turtle scan
 print("\nScanning for turtles...")
 turtles, turtlesIdle = func.updateTurtles(turtleProtocol, turtles, turtlesIdle)
+turtleJobs = {}
 
 -- attempt to recover previous operation
 print("\nSauron boot sequence complete. Searching for previous operations...")
@@ -98,9 +100,10 @@ else -- if previous operation found, read from file and find last chunk complete
     maxheight = file.readLine()
 
     local lastline = {}
-    do -- read through file to find last chunk completed
-        lastline.append(file.readLine())
-    while lastline[#lastline] ~= nil end
+    repeat -- read through file to find last chunk completed
+        local reading = file.readLine()
+        table.insert(lastline, reading)
+    until (lastline[#lastline] == nil)
 
     
     if (lastline[1] == nil or lastline[2] == nil) then -- check if lastchunk wasn't there
@@ -235,20 +238,26 @@ multishell.launch(_ENV,"SauronSupply.lua") -- contacts suppliers
 multishell.launch(_ENV,"SauronTurtles.lua") -- updates turtle list
 multishell.launch(_ENV,"SauronDock.lua") -- docks turtles
 
-repeat
+os.sleep(10)
 
-    local minerID = 0
+repeat
+    local minerID = 1
+    local minerIndex = 1
     repeat -- find a free miner
-        if ((minerID+1) > #turtleJobs) then minerID = 0 end -- resets to zero when ID bigger than table
-        minerID = func.matchID(turtleJobs, 1, minerID+1)
+        if ((minerIndex) > #turtleJobs) then minerIndex = 1 end -- resets to zero when ID bigger than table
+        minerID = func.matchID(turtleJobs, 1, minerIndex)
+        os.sleep(1)
+        print("\nSearching for miner at id " .. minerIndex)
+        minerIndex = minerIndex+1
     until turtlesIdle[minerID] == true
 
     local nextCoordinates = {corners[chunksComplete][1],corners[chunksComplete][2],maxheight} -- THIS IS THE MESSAGE THE TURTLES RECEIVE
 
 
-    -- contact tankers with coordinates
-    rednet.send(minerID, nextCoordinates, tankerProtocol)
-    turtlesIdle[minerID] == false
+    -- contact miner with coordinates
+    rednet.send(minerID, nextCoordinates, miningProtocol)
+    print("\nSent Coordinates " .. nextCoordinates .. " to " .. minerID)
+    turtlesIdle[minerID] = false
 
     -- progress bar
     old = term.redirect(monitor)

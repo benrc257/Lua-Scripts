@@ -9,7 +9,7 @@ local function rednetInitTurtle()  -- Opens rednet on the computer and returns t
     print("\nAttempting to find modems...")
     repeat -- repeatedly search for modems and open rednet until both are complete
         local modems = peripheral.find("modem", rednet.open)
-    until (#modems > 0 and rednet.isOpen())
+    until (rednet.isOpen())
     print("\nWireless modem found, rednet opened.")
 
     print("\nSearching for existing turtles...")
@@ -26,7 +26,7 @@ local function rednetInitTurtle()  -- Opens rednet on the computer and returns t
 
     os.setComputerLabel(label)
     print("\nComputer Label (".. label ..") successfully set.")
-    return {modems, label}
+    return modems, label
 end
 
 local function detectTurtle(direction) -- prevents the bot from mining another turtle during transport
@@ -112,12 +112,12 @@ local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) 
                 if ((turtle.getItemDetail(1)).count <= 1) then
                     askForFuel = true
                 end
-                dockingmessage.append(askForFuel)
+                table.insert(dockingmessage,askForFuel)
 
                 -- find docking computer
                 local dockingID = nil
                 repeat -- find supply computer id
-                    tankerID = rednet.lookup(dockingProtocol, centralComputer)
+                    tankerID = rednet.lookup(dockProtocol, centralComputer)
                     os.sleep(0.05)
                 until (dockingID ~= nil)
 
@@ -125,9 +125,9 @@ local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) 
                 rednet.send(dockingID, dockingmessage, dockProtocol)
                 repeat -- repeats until docking is complete
                     local received = false
-                    local id, message = rednet.receive(dockingProtocol, 2)
+                    local id, message = rednet.receive(dockProtocol, 2)
                     if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-                        received == true
+                        received = true
                     end
                 until (received == true)
             end
@@ -197,7 +197,7 @@ end
 
 local function forward(coords, facing) -- moves forward
     -- move
-    repeat turtle.dig() until turtle.forward() end
+    repeat turtle.dig() until turtle.forward()
 
     -- 1 = north, 2 = east, 3 = south, 4 = west
     --update coords
@@ -346,7 +346,7 @@ local function rednetInit(label)  -- Opens rednet on the computer and returns th
     print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
     print("\nComputer Label (".. label ..") successfully set.")
-    return {modems, label}
+    return modems, label
 end
 
 local function rednetHost(protocol, label) -- Hosts rednet under the given label and protocol, making the pc visible upon lookup
@@ -377,49 +377,11 @@ local function monitorInit() -- Sets up monitor and readies it for use
     local marginHeight = (monitorHeight / 20)
 
     print("\nMonitor online.")
-    return {monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight}
+    return monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight
 end
 
 local function isTable(t) -- checks if t is a table, returns bool
     return (type(t) == "table")
-end
-
-local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches for turtles and returns a list
-
-    -- finds list of turtles
-    turtles = rednet.lookup(turtleProtocol)
-        
-    -- initializes idleTurtles to false
-    turtlesIdle = {}
-    for i=1, #turtles do 
-        turtlesIdle.append(false)
-    end
-
-    -- pings idle turtles and creates a list
-    rednet.broadcast("idlecheck", turtleProtocol)
-
-    -- checking pings
-    local pingIDs = {}
-    repeat -- receive pings and add them to the list
-        local id = nil
-        local message = nil
-        id, message = rednet.receive(turtleProtocol, 1)
-        if (message == "idle") then -- if idle message was received add it to the list
-            pingIDs.append(id)
-        end
-    while id ~= nil end 
-
-    -- update idle turtle status
-    for i=1, #pingIDs do
-        for j=1, #turtles do
-            if (pingIDs[i] == turtles[j]) then
-                turtlesIdle[j] = true
-            end
-        end
-    end
-
-    print("\n" .. #turtles .. " turtles found.")
-    return {turtles, turtlesIdle}
 end
 
 local function openOperationFile(filename) -- opens the last file and checks if it was completed, otherwise it creates a new one
@@ -434,7 +396,7 @@ local function openOperationFile(filename) -- opens the last file and checks if 
     end
 
     file = fs.open("/sauron/mining/" .. filename, "r+")
-    return {file, previousOperation}
+    return file, previousOperation
 end
 
 local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
@@ -449,9 +411,9 @@ end
 local function isFull(needsSupply, centralComputer) 
     local details = turtle.getItemDetail(16)
 
-    if (details ~= nil) {
+    if (details ~= nil) then
         func.dropOff(needsSupply, centralComputer)
-    }
+    end
 end
 
 local function goTo(coords, coordsC1, maxheight, needsSupply, centralComputer) -- goes from coords to coords C1 in transport mode
@@ -582,7 +544,7 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
             facing = func.face(facing, 3)
             if (length > 1) then --if not the first or last line, move into the next line
                 facing = func.forward(coords, facing)
-            else
+            end
 
             -- face the direction that needs to be mined next
             if (length%2 == 1) then
@@ -627,7 +589,6 @@ return {
     rednetHost = rednetHost,
     monitorInit = monitorInit,
     isTable = isTable,
-    updateTurtles = updateTurtles,
     openOperationFile = openOperationFile,
     matchID = matchID,
     goTo = goTo,

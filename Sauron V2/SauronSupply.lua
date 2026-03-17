@@ -10,12 +10,12 @@ multishell.setTitle(multishell.getCurrent(), "SauronSupply")
 
 -- vars
 local chests = {}
-supplychest = false
+supplychest = nil
 
 
 -- find fuel chest
 repeat
-    chests = peripheral.find("minecraft:chest")
+    chests = {peripheral.find("minecraft:chest")}
 
     for i = 1, #chests do -- for each chest found
 
@@ -26,8 +26,9 @@ repeat
         end
        supplychest = chests[i] -- if no fuel is found, use this chest for supply
     end
+    os.sleep(1)
     ::exitchests::
-until (supplychest ~= false)
+until (supplychest ~= nil)
 
 
 
@@ -41,16 +42,20 @@ repeat
         id, message = rednet.receive(tankerProtocol, 10)
     until (func.isTable(message) == true and message[1] == needsSupply)
 
-    local supplierID = 0
-    repeat -- find a free tanker
-        if ((supplierID+1) > #turtleJobs) then supplierID = 0 end -- resets to zero when ID bigger than table
-        supplierID = func.matchID(turtleJobs, 3, supplierID+1)
-    until (turtlesIdle[supplierID] == true)
+    local supplierID = 1
+    local supplierIndex = 1
+    repeat -- find a free supplier
+        if ((supplierIndex) > #turtleJobs) then supplierIndex = 1 end -- resets to zero when ID bigger than table
+        supplierID = func.matchID(turtleJobs, 3, supplierIndex)
+        os.sleep(1)
+        print("\nSearching for supplier at id " .. supplierID)
+        supplierIndex = supplierIndex+1
+    until turtlesIdle[supplierID] == true
 
-    message.append(maxheight)
+    table.insert(message,maxheight)
 
     -- contact tankers with coordinates
     rednet.send(supplierID, message, supplierProtocol)
-    turtlesIdle[supplierID] == false
+    turtlesIdle[supplierID] = false
 
 until (completed == true)

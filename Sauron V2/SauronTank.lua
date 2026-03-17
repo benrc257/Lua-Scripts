@@ -14,7 +14,7 @@ fuelchest = false
 
 -- find fuel chest
 repeat
-    chests = peripheral.find("minecraft:chest")
+    chests = {peripheral.find("minecraft:chest")}
 
     for i = 1, #chests do -- for each chest found
 
@@ -25,6 +25,7 @@ repeat
             end
         end
     end
+    os.sleep(1)
     ::exitchests::
 until (fuelchest ~= false)
 
@@ -38,16 +39,20 @@ repeat
         id, message = rednet.receive(tankerProtocol, 10)
     until (func.isTable(message) == true and message[1] == needsFuel)
 
-    local tankerID = 0
-    repeat -- find a free tanker
-        if ((tankerID+1) > #turtleJobs) then tankerID = 0 end -- resets to zero when ID bigger than table
-        tankerID = func.matchID(turtleJobs, 2, tankerID+1)
-    until (turtlesIdle[tankerID] == true)
+    local tankerID = 1
+    local tankerIndex = 1
+    repeat -- find a free miner
+        if ((tankerIndex) > #turtleJobs) then tankerIndex = 1 end -- resets to zero when ID bigger than table
+        tankerID = func.matchID(turtleJobs, 3, tankerIndex)
+        os.sleep(1)
+        print("\nSearching for miner at id " .. tankerID)
+        tankerIndex = tankerIndex+1
+    until turtlesIdle[tankerID] == true
 
-    message.append(maxheight)
+    table.insert(message, maxheight)
 
     -- contact tankers with coordinates
     rednet.send(tankerID, message, tankerProtocol)  -- tanker receives {needsFuel, {x,y,z}, maxheight}
-    turtlesIdle[tankerID] == false
+    turtlesIdle[tankerID] = false
 
 until (completed == true)

@@ -5,6 +5,7 @@ func = require("turtlefunctions")
 multishell.setTitle(multishell.getCurrent(), "MinionMiner")
 
 -- inital docking
+print("\nBeginning docking")
 local dockedmodem = peripheral.find("modem")
 for i=1, #dockedmodem do -- find the wired modem
     if dockedmodem[i].isWireless() == true then
@@ -13,35 +14,40 @@ for i=1, #dockedmodem do -- find the wired modem
 end
 
 --prepare docking message
+print("\nPreparing docking message")
 local nameLocal = dockedmodem.getNameLocal()
 local dockingmessage = {dockingRequest, "miner", nameLocal}
 local askForFuel = false
-if ((turtle.getItemDetail(1)).count <= 1) then
-    askForFuel = true
+if (turtle.getItemDetail(1) ~= nil) then
+    if ((turtle.getItemDetail(1)).count <= 1) then
+        askForFuel = true
+    end
 end
-dockingmessage.append(askForFuel)
+table.insert(dockingmessage,askForFuel)
 
 -- find docking computer
 local dockingID = nil
+print("\nFinding docking computer")
 repeat -- find supply computer id
-    tankerID = rednet.lookup(dockingProtocol, centralComputer)
+    tankerID = rednet.lookup(dockProtocol, centralComputer)
     os.sleep(0.05)
 until (dockingID ~= nil)
 
 -- send and wait
+print("\nDocking request sent")
 rednet.send(dockingID, dockingmessage, dockProtocol)
 repeat -- repeats until docking is complete
     local received = false
-    local id, message = rednet.receive(dockingProtocol, 2)
+    local id, message = rednet.receive(dockProtocol, 2)
     if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-        received == true
+        received = true
     end
 until (received == true)
 
 repeat
     -- get current coordinates
     print("\nTriangulating position...")
-    local xt, yt, zt = func.triangulate()
+    xt, yt, zt = func.triangulate()
     coords = {x=xt,y=yt,z=zt}
     print("\nPosition found.")
 
@@ -49,14 +55,15 @@ repeat
     print("\nWaiting for coordinates...")
     repeat
         local received = false
-        id, message = rednet.receive(turtleProtocol, 10)
-        if message == idlecheck then
-            rednet.send(id, idleresponse, turtleProtocol)
-        elseif message == "completed" then -- completed signal sent, skip to end of loop
+        id, message = rednet.receive(miningProtocol, 2)
+        local id2, message2 = rednet.receive(turtleProtocol, 2)
+        if func.isTable(message) == true then -- coordinates received {{x1,y1,z1},{x2,y2,z2},maxheight}
+            received = true
+        elseif message2 == "completed" then -- completed signal sent, skip to end of loop
             completed = true
             goto complete
-        elseif func.isTable(message) == true then -- coordinates received {{x1,y1,z1},{x2,y2,z2},maxheight}
-            received == true
+        elseif message2 == idlecheck then
+            rednet.send(id, idleresponse, turtleProtocol)
         end
     until (received == true)
     print ("\nCoordinates received...")
@@ -68,8 +75,8 @@ repeat
     facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
     func.mineChunk(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer)
     facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
-    ::complete::
+    
 until (completed == true)
-
+::complete::
 -- return home
 func.goTo(coords, startingCoords, maxheight, needsFuel, centralComputer)

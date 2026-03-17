@@ -18,7 +18,7 @@ repeat
     repeat -- wait for a docking request
         id, message = nil
         id, message = rednet.receive(dockingProtocol, 10)
-    until (isTable(message) == true and message[1] == dockingRequest)
+    until (func.isTable(message) == true and message[1] == dockingRequest)
 
     -- gets the peripheral name for the docked turtle
     local turtlePeripheral = message[3]
@@ -85,6 +85,6 @@ repeat
 
     -- contact tankers with coordinates
     rednet.send(id, doneDocking, dockingProtocol)
-    turtlesIdle[id] == true
+    turtlesIdle[id] = true
 
 until completed == true

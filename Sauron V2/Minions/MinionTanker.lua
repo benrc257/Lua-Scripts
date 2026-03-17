@@ -16,12 +16,12 @@ end
 local nameLocal = dockedmodem.getNameLocal()
 local dockingmessage = {dockingRequest, "tanker", nameLocal}
 local askForFuel = false
-dockingmessage.append(askForFuel)
+table.insert(dockingmessage,askForFuel)
 
 -- find docking computer
 local dockingID = nil
 repeat -- find docking computer id
-    tankerID = rednet.lookup(dockingProtocol, centralComputer)
+    tankerID = rednet.lookup(dockProtocol, centralComputer)
     os.sleep(0.05)
 until (dockingID ~= nil)
 
@@ -29,16 +29,16 @@ until (dockingID ~= nil)
 rednet.send(dockingID, dockingmessage, dockProtocol)
 repeat -- repeats until docking is complete
     local received = false
-    local id, message = rednet.receive(dockingProtocol, 2)
+    local id, message = rednet.receive(dockProtocol, 2)
     if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-        received == true
+        received = true
     end
 until (received == true)
 
 repeat
     -- get current coordinates
     print("\nTriangulating position...")
-    local xt, yt, zt = func.triangulate()
+    xt, yt, zt = func.triangulate()
     coords = {x=xt,y=yt,z=zt}
     print("\nPosition found.")
 
@@ -49,7 +49,7 @@ repeat
         id, message = rednet.receive(tankerProtocol, 2)
         local id2, message2 = rednet.receive(turtleProtocol, 2)
         if func.isTable(message) == true then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-            received == true
+            received = true
         elseif message2 == "completed" then -- completed signal sent, skip to end of loop
             completed = true
             goto complete
@@ -64,7 +64,7 @@ repeat
 
     -- move to turtle and give it fuel
     facing = func.tankerGoTo(coords, coordsT1, maxheight, needsFuel, centralComputer)
-    local fuelSlot = nil
+    fuelSlot = nil
     for i=2, 16 do --find fuelSlot
         local details = turtle.getItemDetail(i)
         if (details.count == 64) then
@@ -115,12 +115,12 @@ repeat
             if ((turtle.getItemDetail(1)).count <= 1) then
                 askForFuel = true
             end
-            dockingmessage.append(askForFuel)
+            table.insert(dockingmessage, askForFuel)
 
             -- find docking computer
             local dockingID = nil
             repeat -- find supply computer id
-                tankerID = rednet.lookup(dockingProtocol, centralComputer)
+                tankerID = rednet.lookup(dockProtocol, centralComputer)
                 os.sleep(0.05)
             until (dockingID ~= nil)
 
@@ -128,17 +128,17 @@ repeat
             rednet.send(dockingID, dockingmessage, dockProtocol)
             repeat -- repeats until docking is complete
                 local received = false
-                local id, message = rednet.receive(dockingProtocol, 2)
+                local id, message = rednet.receive(dockProtocol, 2)
                 if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-                    received == true
+                    received = true
                 end
             until (received == true)
         end
     end
 
-    ::complete::
+    
 until (completed == true)
-
+::complete::
 -- return home
 coordsC1 = {x=xstart,y=ystart,z=zstart}
 func.tankerGoTo(coords, coordsC1, maxheight, needsFuel, centralComputer)

@@ -4,11 +4,11 @@ local function rednetInit(label)  -- Opens rednet on the computer and returns th
     print("\nAttempting to find modems...")
     repeat -- repeatedly search for modems and open rednet until both are complete
         local modems = peripheral.find("modem", rednet.open);
-    until (#modems > 0 and rednet.isOpen())
+    until (rednet.isOpen())
     print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
     print("\nComputer Label (".. label ..") successfully set.")
-    return {modems, label}
+    return modems, label
 end
 
 local function rednetHost(protocol, label) -- Hosts rednet under the given label and protocol, making the pc visible upon lookup
@@ -22,7 +22,6 @@ local function monitorInit() -- Sets up monitor and readies it for use
     --finding monitor
     print("\nCreating monitor interface...")
     local monitor = peripheral.find("monitor");
-    local monitor = monitor[#monitor]
 
     --settings
     monitor.setBackgroundColor(colors.black)
@@ -39,7 +38,7 @@ local function monitorInit() -- Sets up monitor and readies it for use
     local marginHeight = (monitorHeight / 20);
 
     print("\nMonitor online.")
-    return {monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight}
+    return monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight
 end
 
 local function isTable(t) -- checks if t is a table, returns bool
@@ -49,12 +48,12 @@ end
 local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches for turtles and returns a list
 
     -- finds list of turtles
-    turtles = rednet.lookup(turtleProtocol);
+    turtles = {rednet.lookup(turtleProtocol)}
         
     -- initializes idleTurtles to false
     turtlesIdle = {}
     for i=1, #turtles do 
-        turtlesIdle.append(false)
+        table.insert(turtlesIdle, false)
     end
 
     -- pings idle turtles and creates a list
@@ -65,11 +64,11 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
     repeat -- receive pings and add them to the list
         local id = nil
         local message = nil
-        id, message = rednet.receive(turtleProtocol, 1)
+        id, message = rednet.receive(turtleProtocol, 2)
         if (message == idleresponse) then -- if idle message was received add it to the list
-            pingIDs.append(id)
+            table.insert(pingIDs, id)
         end
-    while id ~= nil end 
+    until id == nil
 
     -- update idle turtle status
     for i=1, #pingIDs do
@@ -81,7 +80,7 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
     end
 
     print("\n" .. #turtles .. " turtles found.")
-    return {turtles, turtlesIdle}
+    return turtles, turtlesIdle
 end
 
 local function openOperationFile(filename) -- opens the last file and checks if it was completed, otherwise it creates a new one
@@ -95,8 +94,11 @@ local function openOperationFile(filename) -- opens the last file and checks if 
         end
     end
 
+    file = fs.open("/sauron/mining/" .. filename, "a")
+    file.close()
     file = fs.open("/sauron/mining/" .. filename, "r+")
-    return {file, previousOperation}
+    
+    return file, previousOperation
 end
 
 local function closeOperationFile(file, filename) -- opens the last file and checks if it was completed, otherwise it creates a new one
@@ -112,7 +114,7 @@ local function triangulate() -- returns GPS coordinates
     repeat
         x, y, z = gps.locate(5);
     until (x ~= nil)
-    return x, y, z;
+    return x, y, z
 end
 
 local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
