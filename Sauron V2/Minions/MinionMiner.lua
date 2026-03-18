@@ -44,6 +44,8 @@ repeat -- repeats until docking is complete
 until message == doneDocking
 id, message = nil, nil
 
+local coords = nil
+local xt, yt, zt = nil, nil, nil
 repeat
     -- get current coordinates
     print("\nTriangulating position...")
@@ -74,8 +76,8 @@ repeat
     coordsC1 = {x=message[1][1], y=message[1][2], z=message[1][3]}
     coordsC2 = {x=message[2][1], y=message[2][2], z=message[2][3]}
 
-    facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
-    func.mineChunk(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer)
+    facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer) 
+    func.mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer) -- (coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer)
     facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
     
 until (completed == true)

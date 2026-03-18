@@ -30,9 +30,9 @@ idleresponse = "idle"
 
 -- rednet opening
 modem, label = func.rednetInitTurtle()
+func.rednetHost(turtleProtocol, label)
 func.rednetHost(protocol, label)
 func.rednetHost(turtleLookupProtocol, label)
-func.rednetHost(turtleProtocol, label)
 func.rednetHost(miningProtocol, label)
 func.rednetHost(dockProtocol, label)
 func.rednetHost(supplierProtocol, label)

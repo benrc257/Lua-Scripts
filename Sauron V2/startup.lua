@@ -93,14 +93,14 @@ if (previousOperation == false) then -- if no previous operation found, request 
 
 else -- if previous operation found, read from file and find last chunk completed and coords
 
-    x1 = file.readLine()
-    y1 = file.readLine()
-    z1 = file.readLine()
-    x2 = file.readLine()
-    y2 = file.readLine()
-    z2 = file.readLine()
-    maxheight = file.readLine()
-    chunkSize = file.readLine()
+    x1 = tonumber(file.readLine())
+    y1 = tonumber(file.readLine())
+    z1 = tonumber(file.readLine())
+    x2 = tonumber(file.readLine())
+    y2 = tonumber(file.readLine())
+    z2 = tonumber(file.readLine())
+    maxheight = tonumber(file.readLine())
+    chunkSize = tonumber(file.readLine())
 
     local lastline = {}
     local reading = nil
@@ -109,7 +109,7 @@ else -- if previous operation found, read from file and find last chunk complete
         if (reading == nil) then
             break
         end
-        table.insert(lastline, reading)
+        table.insert(lastline, tonumber(reading))
     until (lastline[#lastline] == nil)
 
     
@@ -124,22 +124,26 @@ end
 
 -- partioning chunks for jobs
 print("\nPartioning...")
-local length = math.abs(x1-x2)
-local width = math.abs(z1-z2)
-local depth = math.abs(y1-y2)
+local length = math.abs(x1-x2)+1 -- length is x
+local width = math.abs(z1-z2)+1-- width is z
+local depth = math.abs(y1-y2)+1
+
+print("\nLength: " .. length)
+print("\nDepth: " .. depth)
+print("\nWidth: " .. width)
 
 -- calculate number of chunks long
 if (length%chunkSize == 0) then
     chunkLength = length/chunkSize;
 else
-    chunkLength = (length/chunkSize)+1;
+    chunkLength = math.ceil(length/chunkSize)+1;
 end
 
 -- calculate number of chunks wide
 if (width%chunkSize == 0) then 
     chunkWidth = width/chunkSize;
 else
-    chunkWidth = (width/chunkSize)+1;
+    chunkWidth = math.ceil(width/chunkSize)+1;
 end
 
 -- calculate total number of chunks
@@ -166,71 +170,89 @@ end
 
 -- assign corners
 corners = {}
-local chunksPartioned = 1
-for i=1, chunkLength-1 do -- chunks are partioned in order from bottom left to top right
+local chunksPartioned = 0
 
-    -- calculates corner X and Y coords
-    local corner1X = originX+((i-1)*chunkSize)
-    local corner1Y = originY+0
-    local corner2X = originX+(i*(chunkSize-1))
-    local corner2Y = originY-depth
+corner1Y = originY+0
+corner2Y = originY-depth
 
-    for j=1, chunkWidth-1 do -- for width
-        -- calculates corner Z coords
-        local corner1Z = originZ+((j-1)*chunkSize)
-        local corner2Z = originZ+(j*(chunkSize-1))
+if (chunks == 1) then
+    corner1X = originX+0
+    corner2X = originX+length-1
+    corner1Z = originZ+0
+    corner2Z = originZ+width-1
+    chunksPartioned = chunksPartioned+1
+    corners[chunksPartioned] = {}
+    corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
+    corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+else 
+    for i=1, chunkLength-1 do -- non edge chunks
+        corner1X = originX+((i-1)*chunkSize)
+        corner2X = originX+((i-1)*chunkSize)+(chunkSize-1)
 
-        -- inserts the corner coords into the array
+        for j=1, chunkWidth-1 do -- non edge chunks
+            corner1Z = originZ+((j-1)*chunkSize)
+            corner2Z = originZ+((j-1)*chunkSize)+(chunkSize-1)
+
+
+            chunksPartioned = chunksPartioned+1
+            corners[chunksPartioned] = {}
+            corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
+            corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+        end
+
+        -- edge chunks
+        corner1Z = originZ+((chunkWidth-1)*chunkSize)
+        if (width%chunkSize) > 0 then
+            corner2Z = originZ+((chunkWidth-1)*chunkSize)+((width%chunkSize)-1)
+        else
+            corner2Z = originZ+((chunkWidth-1)*chunkSize)+(chunkSize-1)
+        end
+
+        chunksPartioned = chunksPartioned+1
         corners[chunksPartioned] = {}
         corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
         corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
-        chunksPartioned = chunksPartioned+1
+
     end
 
-    for j=chunkWidth, chunkWidth do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
-        -- calculates corner Z coords
-        local corner1Z = originZ+((j-1)*chunkSize)+(width%chunkSize)
-        local corner2Z = originZ+((j-1)*(chunkSize-1))+(width%chunkSize)
+    for i=1, chunkLength do -- edge chunks
+        corner1X = originX+((i-1)*chunkSize)
+        if (length%chunkSize) > 0 then
+            corner2X = originX+((i-1)*chunkSize)+((length%chunkSize)-1)
+        else
+            corner2X = originX+((i-1)*chunkSize)+(chunkSize-1)
+        end
 
-        -- inserts the corner coords into the array
+
+        for j=1, chunkWidth-1 do -- non edge chunks
+            corner1Z = originZ+((j-1)*chunkSize)
+            corner2Z = originZ+((j-1)*chunkSize)+(chunkSize-1)
+
+
+            chunksPartioned = chunksPartioned+1
+            corners[chunksPartioned] = {}
+            corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
+            corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+        end
+
+        -- edge chunks
+        corner1Z = originZ+((chunkWidth-1)*chunkSize)
+        if (width%chunkSize) > 0 then
+            corner2Z = originZ+((chunkWidth-1)*chunkSize)+((width%chunkSize)-1)
+        else
+            corner2Z = originZ+((chunkWidth-1)*chunkSize)+(chunkSize-1)
+        end
+
+
+        chunksPartioned = chunksPartioned+1
         corners[chunksPartioned] = {}
         corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
         corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
-        chunksPartioned = chunksPartioned+1
+
     end
 end
 
-for i=chunkLength, chunkLength do -- handling of top edge chunks
 
-    -- calculates corner X and Y coords
-    local corner1X = originX+((i-1)*chunkSize)
-    local corner1Y = originY+0
-    local corner2X = originX+((i)*(chunkSize-1))
-    local corner2Y = originY-depth
-
-    for j=1, chunkWidth-1 do -- for width
-        -- calculates corner Z coords
-        local corner1Z = originZ+((j-1)*chunkSize)
-        local corner2Z = originZ+(j*(chunkSize-1))
-
-        -- inserts the corner coords into the array
-        corners[chunksPartioned] = {}
-        corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
-        corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
-        chunksPartioned = chunksPartioned+1
-    end
-    for j=chunkWidth, chunkWidth do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
-        -- calculates corner Z coords
-        local corner1Z = originZ+((j-1)*chunkSize)+(width%chunkSize)
-        local corner2Z = originZ+((j-1)*(chunkSize-1))+(width%chunkSize)
-
-        -- inserts the corner coords into the array
-        corners[chunksPartioned] = {}
-        corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
-        corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
-        chunksPartioned = chunksPartioned+1
-    end
-end
 
 -- monitor setup
 monitor.setCursorPos(marginW, ((mheight/2)-(mheight*.3)))
@@ -261,9 +283,12 @@ repeat
                 break
             end
         end
-        os.sleep(0.1)
+        os.sleep(3)
     until free ~= 0
 
+
+    print("Expected chunks:", chunks)
+    print("Actual corners:", #corners)
 
     local nextCoordinates = {corners[chunksComplete][1],corners[chunksComplete][2],maxheight} -- THIS IS THE MESSAGE THE TURTLES RECEIVE
     local minerID = turtles[free]
@@ -276,19 +301,19 @@ repeat
 
     -- progress bar
     old = term.redirect(monitor)
-    paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*(chunksComplete/chunks)), ((mheight/2)+(mheight*.3)), colors.red)
+    paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*((chunksComplete/chunks))), ((mheight/2)+(mheight*.3)), colors.red)
     term.redirect(old)
     chunksComplete = chunksComplete+1
     file.write(nextCoordinates[1][1] .. "\n" .. nextCoordinates[1][2] .. "\n" .. nextCoordinates[1][3] .. "\n" .. nextCoordinates[2][1] .. "\n" .. nextCoordinates[2][2] .. "\n" .. nextCoordinates[2][3] .. "\n" .. maxheight .. "\n")
     file.flush()
 until chunksComplete > chunks
 
--- close save file
-closeOperationFile(file, filename)
-
 repeat -- wait until all turtles are free
     os.sleep(10)
-until (matchID(turtlesIdle, false, 1) == 0)
+until (func.matchID(turtlesIdle, false, 1) == 0)
+
+-- close save file
+func.closeOperationFile(file, filename)
 
 -- show complete on monitor
 monitor.setCursorPos(marginW, ((mheight/2)+(mheight*.1)))

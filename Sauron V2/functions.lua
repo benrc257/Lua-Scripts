@@ -1,8 +1,8 @@
 -- if (want to take over world) then "no" end
 
-local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
-    for i=startingIndex, #table do
-        if (id == table[i]) then
+local function matchID(t, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
+    for i=startingIndex, #t do
+        if (id == t[i]) then
             return i
         end
     end

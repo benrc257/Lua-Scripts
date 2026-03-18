@@ -1,4 +1,5 @@
 local function triangulate() -- returns GPS coordinates
+    local x, y, z = nil, nil, nil
     repeat
         x, y, z = gps.locate(5)
     until (x ~= nil)
@@ -14,9 +15,10 @@ local function rednetInitTurtle()  -- Opens rednet on the computer and returns t
 
     print("\nSearching for existing turtles...")
     local label = 0
+    local lookup = nil
     repeat
         label = label+1
-        local lookup =  rednet.lookup(turtleProtocol, "" .. label)
+        lookup =  rednet.lookup(turtleProtocol, "" .. label)
         if (lookup ~= nil) then
             print("\nTurtle " .. label .. " found.")
         end
@@ -84,7 +86,7 @@ local function refuel(needsFuel, centralComputer) -- requests then waits for ref
     end
 end
 
-local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) -- tanker returns to docking instead of manually refueling
+local function tankerRefuel(coords, maxheight, centralComputer) -- tanker returns to docking instead of manually refueling
     local refueled = false
     if (turtle.getFuelLevel() <= 1250) then -- if fuel level low, refuel
         refueled = true
@@ -92,7 +94,7 @@ local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) 
         if (turtle.getItemCount() ~= 64) then -- if no fuel, request fuel
             turtle.select(16)
             if (turtle.getItemCount() ~= 64) then
-                facing = func.tankerGoTo(coords, startingCoords, maxheight, nil, centralComputer)
+                facing = func.tankerGoTo(coords, maxheight, nil, centralComputer)
 
                 -- note for minions: they will need to attach to a modem bay and then use modem.getNameLocal(), then transmit that name via rednet to this computer so it can send fuel.
                 -- should look like message[1] = dockingRequest, message[2] = supply or tanker, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
@@ -332,7 +334,7 @@ local function fillLiquid() -- fills liquid beneath the turtle
             slot = slot+1
             turtle.select(slot)
             local item = turtle.getItemDetail()
-            if (item.name == "minecraft:cobblestone" or item.name == "minecraft:dirt" or item.name == "minecraft:cobbled_deepslate") then
+            if (item ~= nil and (item.name == "minecraft:cobblestone" or item.name == "minecraft:dirt" or item.name == "minecraft:cobbled_deepslate")) then
                 success = turtle.placeDown()
             end
         end
@@ -401,9 +403,9 @@ local function openOperationFile(filename) -- opens the last file and checks if 
     return file, previousOperation
 end
 
-local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
-    for i=startingIndex, #table do
-        if (id == table[i]) then
+local function matchID(t, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
+    for i=startingIndex, #t do
+        if (id == t[i]) then
             return i
         end
     end
@@ -418,10 +420,10 @@ local function isFull(needsSupply, centralComputer)
     end
 end
 
-local function goTo(coords, coordsC1, maxheight, needsSupply, centralComputer) -- goes from coords to coords C1 in transport mode
-    if (needsSupply ~= nil) then -- if needsSupply is passed
+local function goTo(coords, coordsC1, maxheight, needsFuel, centralComputer) -- goes from coords to coords C1 in transport mode
+    if (needsFuel ~= nil) then -- if needsFuel is passed
         -- check for fuel
-        func.refuel(needsSupply, centralComputer)
+        func.refuel(needsFuel, centralComputer)
     end
 
     -- ascend
@@ -469,10 +471,10 @@ local function goTo(coords, coordsC1, maxheight, needsSupply, centralComputer) -
     return facing
 end
 
-local function tankerGoTo(coords, coordsC1, maxheight, needsSupply, centralComputer) -- goes from coords to coords C1 in transport mode
+local function tankerGoTo(coords, maxheight, needsFuel, centralComputer) -- goes from coords to coords C1 in transport mode
     local refueled = false
-    if (needsSupply ~= nil) then
-        refueled = func.tankerRefuel(coords, startingCoords, maxheight, centralComputer)
+    if (needsFuel ~= nil) then
+        refueled = func.tankerRefuel(coords, maxheight, centralComputer)
     end
 
     -- ascend
@@ -487,33 +489,33 @@ local function tankerGoTo(coords, coordsC1, maxheight, needsSupply, centralCompu
     -- 1 = north, 2 = east, 3 = south, 4 = west
 
     -- move X
-    if (coords.x < coordsC1.x) then
+    if (coords.x < startingCoords.x) then
         facing = func.face(facing, 2)
-        while (coords.x < coordsC1.x) do
+        while (coords.x < startingCoords.x) do
             func.forwardTransport(coords, facing)
         end
-    elseif (coords.x > coordsC1.x) then
+    elseif (coords.x > startingCoords.x) then
         facing = func.face(facing, 4)
-        while (coords.x > coordsC1.x) do
+        while (coords.x > startingCoords.x) do
             func.forwardTransport(coords, facing)
         end
     end
 
     -- move Z
-    if (coords.z < coordsC1.z) then
+    if (coords.z < startingCoords.z) then
         facing = func.face(facing, 3)
-        while (coords.z < coordsC1.z) do
+        while (coords.z < startingCoords.z) do
             func.forwardTransport(coords, facing)
         end
-    elseif (coords.z > coordsC1.z) then
+    elseif (coords.z > startingCoords.z) then
         facing = func.face(facing, 1)
-        while (coords.z > coordsC1.z) do
+        while (coords.z > startingCoords.z) do
             func.forwardTransport(coords, facing)
         end
     end
 
     -- descend
-    while (coords.y > coordsC1.y) do
+    while (coords.y > startingCoords.y) do
         func.downTransport(coords)
     end
 
@@ -524,9 +526,9 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
 
     func.upTransport(coords)
 
-    local lengthX = math.abs(coordsC1.x-coordsC2.x)
-    local depthY = math.abs(coordsC1.y-coordsC2.y)
-    local widthZ = math.abs(coordsC1.z-coordsC2.z)
+    local lengthX = math.abs(coordsC1.x-coordsC2.x)+1
+    local depthY = math.abs(coordsC1.y-coordsC2.y)+1
+    local widthZ = math.abs(coordsC1.z-coordsC2.z)+1
 
 
     -- start mining
@@ -538,18 +540,18 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
         -- 1 = north, 2 = east, 3 = south, 4 = west
         -- always face east first
         func.down(coords)
-        for length=1, lengthX do -- for each line
+        for i=1, lengthX do -- for each line
             -- check inventory each line
             func.isFull(needsSupply, centralComputer)
 
             --face south
             facing = func.face(facing, 3)
-            if (length > 1) then --if not the first or last line, move into the next line
+            if (i > 1) then --if not the first or last line, move into the next line
                 func.forward(coords, facing)
             end
 
             -- face the direction that needs to be mined next
-            if (length%2 == 1) then
+            if (i%2 == 1) then
                 facing = func.face(facing, 2)
             else
                 facing = func.face(facing, 4)
@@ -583,6 +585,7 @@ return {
     forwardTransport = forwardTransport,
     back = back,
     up = up,
+    fillLiquid = fillLiquid,
     upTransport = upTransport,
     down = down,
     downTransport = downTransport,
@@ -594,6 +597,7 @@ return {
     openOperationFile = openOperationFile,
     matchID = matchID,
     goTo = goTo,
+    isFull = isFull,
     tankerGoTo = tankerGoTo,
     mine = mine
 }
