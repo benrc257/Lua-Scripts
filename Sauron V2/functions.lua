@@ -1,9 +1,19 @@
 -- if (want to take over world) then "no" end
 
+local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
+    for i=startingIndex, #table do
+        if (id == table[i]) then
+            return i
+        end
+    end
+    return 0
+end
+
 local function rednetInit(label)  -- Opens rednet on the computer and returns the modem peripheral
+    peripheral.getNames()
     print("\nAttempting to find modems...")
     repeat -- repeatedly search for modems and open rednet until both are complete
-        local modems = peripheral.find("modem", rednet.open);
+        local modems = {peripheral.find("modem", rednet.open)}
     until (rednet.isOpen())
     print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
@@ -21,7 +31,8 @@ local function monitorInit() -- Sets up monitor and readies it for use
 
     --finding monitor
     print("\nCreating monitor interface...")
-    local monitor = peripheral.find("monitor");
+    print("\nYou better not connect more than one monitor.")
+    local monitor = peripheral.find("monitor") 
 
     --settings
     monitor.setBackgroundColor(colors.black)
@@ -29,13 +40,13 @@ local function monitorInit() -- Sets up monitor and readies it for use
     monitor.setTextScale(1.5)
 
     --clear screen
-    monitor.clear();
+    monitor.clear()
 
     --calculating size and margins
-    local monitorWidth, monitorHeight = monitor.getSize();
-    local resolution = monitorWidth*monitorHeight;
-    local marginWidth = (monitorWidth / 20);
-    local marginHeight = (monitorHeight / 20);
+    local monitorWidth, monitorHeight = monitor.getSize()
+    local resolution = monitorWidth*monitorHeight
+    local marginWidth = (monitorWidth / 20)
+    local marginHeight = (monitorHeight / 20)
 
     print("\nMonitor online.")
     return monitor, monitorWidth, monitorHeight, resolution, marginWidth, marginHeight
@@ -48,7 +59,7 @@ end
 local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches for turtles and returns a list
 
     -- finds list of turtles
-    turtles = {rednet.lookup(turtleProtocol)}
+    turtles = {rednet.lookup(turtleLookupProtocol)}
         
     -- initializes idleTurtles to false
     turtlesIdle = {}
@@ -61,21 +72,23 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
 
     -- checking pings
     local pingIDs = {}
+    local id, message = nil, nil
     repeat -- receive pings and add them to the list
-        local id = nil
-        local message = nil
+        id, message = nil, nil
         id, message = rednet.receive(turtleProtocol, 2)
-        if (message == idleresponse) then -- if idle message was received add it to the list
+        if (id ~= nil and message == idleresponse) then -- if idle message was received add it to the list
             table.insert(pingIDs, id)
         end
+
     until id == nil
+    id, message = nil, nil
 
     -- update idle turtle status
+    local indexFound = nil
     for i=1, #pingIDs do
-        for j=1, #turtles do
-            if (pingIDs[i] == turtles[j]) then
-                turtlesIdle[j] = true
-            end
+        indexFound = matchID(turtles, pingIDs[i], 1)
+        if(indexFound ~= 0) then
+            turtlesIdle[indexFound] = true
         end
     end
 
@@ -112,22 +125,14 @@ end
 
 local function triangulate() -- returns GPS coordinates
     repeat
-        x, y, z = gps.locate(5);
+        x, y, z = gps.locate(5)
     until (x ~= nil)
     return x, y, z
 end
 
-local function matchID(table, id, startingIndex) -- finds id in table1 starting at startingIndex, returns index
-    for i=startingIndex, #table do
-        if (id == table[i]) then
-            return i
-        end
-    end
-    return 0
-end
-
 -- function list to return
 return {
+    matchID = matchID,
     rednetInit = rednetInit,
     rednetHost = rednetHost,
     monitorInit = monitorInit,
@@ -135,6 +140,5 @@ return {
     updateTurtles = updateTurtles,
     openOperationFile = openOperationFile,
     closeOperationFile = closeOperationFile,
-    triangulate = triangulate,
-    matchID = matchID
+    triangulate = triangulate
 }

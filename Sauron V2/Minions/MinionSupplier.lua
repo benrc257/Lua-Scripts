@@ -5,10 +5,11 @@ func = require("turtlefunctions")
 multishell.setTitle(multishell.getCurrent(), "MinionSupplier")
 
 -- inital docking
-local dockedmodem = peripheral.find("modem")
+local dockedmodem = {peripheral.find("modem")}
 for i=1, #dockedmodem do -- find the wired modem
-    if dockedmodem[i].isWireless() == true then
+    if dockedmodem[i].isWireless() == false then
         dockedmodem = dockedmodem[i]
+        break
     end
 end
 
@@ -16,29 +17,27 @@ end
 local nameLocal = dockedmodem.getNameLocal()
 local dockingmessage = {dockingRequest, "supply", nameLocal}
 local askForFuel = false
-if (turtle.getItemDetail(1) ~= nil) then
-    if ((turtle.getItemDetail(1)).count <= 1) then
-        askForFuel = true
-    end
+if ((turtle.getItemCount(1)) <= 1) then
+    askForFuel = true
 end
 table.insert(dockingmessage,askForFuel)
 
 -- find docking computer
 local dockingID = nil
 repeat -- find docking computer id
-    tankerID = rednet.lookup(dockProtocol, centralComputer)
+    dockingID = rednet.lookup(dockProtocol, centralComputer)
     os.sleep(0.05)
 until (dockingID ~= nil)
 
+
 -- send and wait
+print("\nDocking request sent")
 rednet.send(dockingID, dockingmessage, dockProtocol)
+local id, message = nil, nil
 repeat -- repeats until docking is complete
-    local received = false
-    local id, message = rednet.receive(dockProtocol, 2)
-    if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-        received = true
-    end
-until (received == true)
+    id, message = rednet.receive(dockProtocol, 2)
+until message == doneDocking
+id, message = nil, nil
 
 repeat
     -- get current coordinates
@@ -49,11 +48,13 @@ repeat
 
     -- wait for message, responding when pinged for idle
     print("\nWaiting for coordinates...")
+    local id, message = nil, nil
+    local id2, message2 = nil, nil
+    local received = false
     repeat
-        local received = false
-        id, message = rednet.receive(supplyProtocol, 2)
-        local id2, message2 = rednet.receive(turtleProtocol, 2)
-        if func.isTable(message) == true then -- coordinates received {"...", {x1,y1,z1}, maxheight}
+        id, message = rednet.receive(supplierProtocol, 2)
+        id2, message2 = rednet.receive(turtleProtocol, 2)
+        if message ~= nil then -- coordinates received {"...", {x1,y1,z1}, maxheight}
             received = true
         elseif message2 == "completed" then -- completed signal sent, skip to end of loop
             completed = true
@@ -79,41 +80,41 @@ repeat
     -- should look like message[1] = dockingRequest, message[2] = supply or tanker, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
 
     -- docking
-    dockedmodem = peripheral.find("modem")
+    dockedmodem = {peripheral.find("modem")}
     for i=1, #dockedmodem do -- find the wired modem
-        if dockedmodem[i].isWireless() == true then
+        if dockedmodem[i].isWireless() == false then
             dockedmodem = dockedmodem[i]
+            break
         end
     end
 
+
     --prepare docking message
     nameLocal = dockedmodem.getNameLocal()
+    print("\nLocal Modem Name: ")
+    print(nameLocal)
     dockingmessage = {dockingRequest, "supply", nameLocal}
     askForFuel = false
-    if (turtle.getItemDetail(1) ~= nil) then
-        if ((turtle.getItemDetail(1)).count <= 1) then
-            askForFuel = true
-        end
+    if ((turtle.getItemCount(1)) <= 1) then
+        askForFuel = true
     end
     table.insert(dockingmessage,askForFuel)
 
     -- find docking computer
     dockingID = nil
     repeat -- find docking computer id
-        tankerID = rednet.lookup(dockProtocol, centralComputer)
+        dockingID = rednet.lookup(dockProtocol, centralComputer)
         os.sleep(0.05)
     until (dockingID ~= nil)
 
     -- send and wait
+    print("\nDocking request sent")
     rednet.send(dockingID, dockingmessage, dockProtocol)
+    local id, message = nil, nil
     repeat -- repeats until docking is complete
-        local received = false
-        local id, message = rednet.receive(dockProtocol, 2)
-        if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-            received = true
-        end
-    until (received == true)
-
+        id, message = rednet.receive(dockProtocol, 2)
+    until message == doneDocking
+    id, message = nil, nil
     
 until (completed == true)
 ::complete::

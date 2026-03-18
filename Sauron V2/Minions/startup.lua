@@ -10,6 +10,7 @@ completed = false
 -- rednet vars
 centralComputer = "EYE"
 protocol = "sauron"  -- rednet protocol
+turtleLookupProtocol = "sauronLookup"
 turtleProtocol = "sauronTurtles"
 miningProtocol = "sauronMiners"
 tankerProtocol = "sauronTankers"
@@ -30,6 +31,7 @@ idleresponse = "idle"
 -- rednet opening
 modem, label = func.rednetInitTurtle()
 func.rednetHost(protocol, label)
+func.rednetHost(turtleLookupProtocol, label)
 func.rednetHost(turtleProtocol, label)
 func.rednetHost(miningProtocol, label)
 func.rednetHost(dockProtocol, label)

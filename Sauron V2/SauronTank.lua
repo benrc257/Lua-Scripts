@@ -33,26 +33,31 @@ until (fuelchest ~= false)
 -- refueling handling
 repeat
 
-    local id, message = nil
+    local id, message = nil, nil
     repeat -- wait for a fuel request
-        id, message = nil
         id, message = rednet.receive(tankerProtocol, 10)
-    until (func.isTable(message) == true and message[1] == needsFuel)
+    until (message ~= nil and func.isTable(message) == true)
 
-    local tankerID = 1
-    local tankerIndex = 1
-    repeat -- find a free miner
-        if ((tankerIndex) > #turtleJobs) then tankerIndex = 1 end -- resets to zero when ID bigger than table
-        tankerID = func.matchID(turtleJobs, 3, tankerIndex)
-        os.sleep(1)
-        print("\nSearching for miner at id " .. tankerID)
-        tankerIndex = tankerIndex+1
-    until turtlesIdle[tankerID] == true
+    local free = 0
+    repeat -- find a free tanker
+        for tankerIndex=1, #turtleJobs do
+            tankerIndex = func.matchID(turtleJobs, 1, tankerIndex)
+            print("\nSearching for tanker at id " .. tankerIndex)
+            if tankerIndex ~= 0 and turtlesIdle[tankerIndex] == true then
+                print("\nFree tanker found at index" .. tankerIndex)
+                free = tankerIndex
+                break
+            end
+        end
+        os.sleep(2)
+    until free ~= 0
+
 
     table.insert(message, maxheight)
+    local tankerID = turtles[free]
+    turtlesIdle[free] = false
 
     -- contact tankers with coordinates
     rednet.send(tankerID, message, tankerProtocol)  -- tanker receives {needsFuel, {x,y,z}, maxheight}
-    turtlesIdle[tankerID] = false
 
 until (completed == true)

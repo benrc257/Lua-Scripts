@@ -13,8 +13,9 @@ turtlesIdle = {}; -- list of idle turtles
 turtleJobs = {} -- 1 - miner, 2 - tanker, 3 - supplier
 chunkSize = 16 -- size of mined chunks
 chunksComplete = 1 -- chunks left
+maxheight = nil
 local filename = "operations.txt" -- used for save file
-local x1, x2, y1, y2, z1, z2, maxheight = nil -- used for initial coordinates
+local x1, x2, y1, y2, z1, z2 = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
 local file = nil -- used for operation file
 local previousOperation = nil -- used to tell if there was a previous incomplete mining operation
@@ -26,6 +27,7 @@ fuelSource = "minecraft:dried_kelp_block" -- change if you want to swap fuel sou
 -- rednet vars
 label = "EYE"; -- computer label
 protocol = "sauron"; -- rednet protocol
+turtleLookupProtocol = "sauronLookup"
 turtleProtocol = "sauronTurtles"
 miningProtocol = "sauronMiners"
 tankerProtocol = "sauronTankers"
@@ -87,7 +89,7 @@ if (previousOperation == false) then -- if no previous operation found, request 
     until (confirm == "y" or confirm == "Y")
 
     -- write new operation coords to file
-    file.write(x1 .. "\n" .. y1 .. "\n" .. z1 .. "\n" .. x2 .. "\n" .. y2 .. "\n" .. z2 .. "\n" .. maxheight .. "\n")
+    file.write(x1 .. "\n" .. y1 .. "\n" .. z1 .. "\n" .. x2 .. "\n" .. y2 .. "\n" .. z2 .. "\n" .. maxheight .. "\n" ..  chunkSize .. "\n")
 
 else -- if previous operation found, read from file and find last chunk completed and coords
 
@@ -98,10 +100,15 @@ else -- if previous operation found, read from file and find last chunk complete
     y2 = file.readLine()
     z2 = file.readLine()
     maxheight = file.readLine()
+    chunkSize = file.readLine()
 
     local lastline = {}
+    local reading = nil
     repeat -- read through file to find last chunk completed
         local reading = file.readLine()
+        if (reading == nil) then
+            break
+        end
         table.insert(lastline, reading)
     until (lastline[#lastline] == nil)
 
@@ -160,15 +167,15 @@ end
 -- assign corners
 corners = {}
 local chunksPartioned = 1
-for i=1, length-1 do -- chunks are partioned in order from bottom left to top right
+for i=1, chunkLength-1 do -- chunks are partioned in order from bottom left to top right
 
     -- calculates corner X and Y coords
     local corner1X = originX+((i-1)*chunkSize)
-    local corner1Y = originY
+    local corner1Y = originY+0
     local corner2X = originX+(i*(chunkSize-1))
     local corner2Y = originY-depth
 
-    for j=1, width-1 do -- for width
+    for j=1, chunkWidth-1 do -- for width
         -- calculates corner Z coords
         local corner1Z = originZ+((j-1)*chunkSize)
         local corner2Z = originZ+(j*(chunkSize-1))
@@ -180,9 +187,9 @@ for i=1, length-1 do -- chunks are partioned in order from bottom left to top ri
         chunksPartioned = chunksPartioned+1
     end
 
-    for j=width, width do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
+    for j=chunkWidth, chunkWidth do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
         -- calculates corner Z coords
-        local corner1Z = originZ+((j-2)*chunkSize)+(width%chunkSize)
+        local corner1Z = originZ+((j-1)*chunkSize)+(width%chunkSize)
         local corner2Z = originZ+((j-1)*(chunkSize-1))+(width%chunkSize)
 
         -- inserts the corner coords into the array
@@ -193,15 +200,15 @@ for i=1, length-1 do -- chunks are partioned in order from bottom left to top ri
     end
 end
 
-for i=length, length do -- handling of top edge chunks
+for i=chunkLength, chunkLength do -- handling of top edge chunks
 
     -- calculates corner X and Y coords
     local corner1X = originX+((i-1)*chunkSize)
-    local corner1Y = originY
-    local corner2X = originX+((i-1)*(chunkSize-1))+(originX%chunkSize)
+    local corner1Y = originY+0
+    local corner2X = originX+((i)*(chunkSize-1))
     local corner2Y = originY-depth
 
-    for j=1, width do -- for width
+    for j=1, chunkWidth-1 do -- for width
         -- calculates corner Z coords
         local corner1Z = originZ+((j-1)*chunkSize)
         local corner2Z = originZ+(j*(chunkSize-1))
@@ -212,10 +219,10 @@ for i=length, length do -- handling of top edge chunks
         corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
         chunksPartioned = chunksPartioned+1
     end
-    for j=width, width do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
+    for j=chunkWidth, chunkWidth do -- for edge chunks, yes i just made it a for loop so i could reuse logic dont hurt me :(
         -- calculates corner Z coords
-        local corner1Z = originZ+((j-1)*chunkSize)
-        local corner2Z = originZ+((j-1)*(chunkSize-1))+(originZ%chunkSize)
+        local corner1Z = originZ+((j-1)*chunkSize)+(width%chunkSize)
+        local corner2Z = originZ+((j-1)*(chunkSize-1))+(width%chunkSize)
 
         -- inserts the corner coords into the array
         corners[chunksPartioned] = {}
@@ -236,28 +243,36 @@ term.redirect(old)
 multishell.launch(_ENV,"SauronTank.lua") -- contacts tankers
 multishell.launch(_ENV,"SauronSupply.lua") -- contacts suppliers
 multishell.launch(_ENV,"SauronTurtles.lua") -- updates turtle list
+os.sleep(5)
 multishell.launch(_ENV,"SauronDock.lua") -- docks turtles
 
 os.sleep(10)
 
 repeat
-    local minerID = 1
-    local minerIndex = 1
+
+    local free = 0
     repeat -- find a free miner
-        if ((minerIndex) > #turtleJobs) then minerIndex = 1 end -- resets to zero when ID bigger than table
-        minerID = func.matchID(turtleJobs, 1, minerIndex)
-        os.sleep(1)
-        print("\nSearching for miner at id " .. minerIndex)
-        minerIndex = minerIndex+1
-    until turtlesIdle[minerID] == true
+        for minerIndex=1, #turtleJobs do
+            minerIndex = func.matchID(turtleJobs, 1, minerIndex)
+            print("\nSearching for miner at id " .. minerIndex)
+            if minerIndex ~= 0 and turtlesIdle[minerIndex] == true then
+                print("\nFree miner found at index" .. minerIndex)
+                free = minerIndex
+                break
+            end
+        end
+        os.sleep(0.1)
+    until free ~= 0
+
 
     local nextCoordinates = {corners[chunksComplete][1],corners[chunksComplete][2],maxheight} -- THIS IS THE MESSAGE THE TURTLES RECEIVE
-
+    local minerID = turtles[free]
+    turtlesIdle[free] = false
 
     -- contact miner with coordinates
     rednet.send(minerID, nextCoordinates, miningProtocol)
-    print("\nSent Coordinates " .. nextCoordinates .. " to " .. minerID)
-    turtlesIdle[minerID] = false
+    print("\nSent Coordinates " .. minerID)
+    
 
     -- progress bar
     old = term.redirect(monitor)

@@ -6,22 +6,24 @@ multishell.setTitle(multishell.getCurrent(), "MinionMiner")
 
 -- inital docking
 print("\nBeginning docking")
-local dockedmodem = peripheral.find("modem")
+peripheral.getNames()  -- forces scan
+local dockedmodem = {peripheral.find("modem")}
 for i=1, #dockedmodem do -- find the wired modem
-    if dockedmodem[i].isWireless() == true then
+    if dockedmodem[i].isWireless() == false then
         dockedmodem = dockedmodem[i]
+        break
     end
 end
 
 --prepare docking message
 print("\nPreparing docking message")
 local nameLocal = dockedmodem.getNameLocal()
+print("\nLocal Modem Name: ")
+print(nameLocal)
 local dockingmessage = {dockingRequest, "miner", nameLocal}
 local askForFuel = false
-if (turtle.getItemDetail(1) ~= nil) then
-    if ((turtle.getItemDetail(1)).count <= 1) then
-        askForFuel = true
-    end
+if ((turtle.getItemCount(1)) <= 1) then
+    askForFuel = true
 end
 table.insert(dockingmessage,askForFuel)
 
@@ -29,20 +31,18 @@ table.insert(dockingmessage,askForFuel)
 local dockingID = nil
 print("\nFinding docking computer")
 repeat -- find supply computer id
-    tankerID = rednet.lookup(dockProtocol, centralComputer)
+    dockingID = rednet.lookup(dockProtocol, centralComputer)
     os.sleep(0.05)
 until (dockingID ~= nil)
 
 -- send and wait
 print("\nDocking request sent")
 rednet.send(dockingID, dockingmessage, dockProtocol)
+local id, message = nil, nil
 repeat -- repeats until docking is complete
-    local received = false
-    local id, message = rednet.receive(dockProtocol, 2)
-    if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-        received = true
-    end
-until (received == true)
+    id, message = rednet.receive(dockProtocol, 2)
+until message == doneDocking
+id, message = nil, nil
 
 repeat
     -- get current coordinates
@@ -53,17 +53,19 @@ repeat
 
     -- wait for message, responding when pinged for idle
     print("\nWaiting for coordinates...")
+    local id2, message2 = nil, nil
+    local id, message = nil, nil
+    local received = false
     repeat
-        local received = false
-        id, message = rednet.receive(miningProtocol, 2)
-        local id2, message2 = rednet.receive(turtleProtocol, 2)
-        if func.isTable(message) == true then -- coordinates received {{x1,y1,z1},{x2,y2,z2},maxheight}
+        id, message = rednet.receive(miningProtocol, 5)
+        id2, message2 = rednet.receive(turtleProtocol, 1)
+        if message ~= nil then -- coordinates received {{x1,y1,z1},{x2,y2,z2},maxheight}
             received = true
         elseif message2 == "completed" then -- completed signal sent, skip to end of loop
             completed = true
             goto complete
         elseif message2 == idlecheck then
-            rednet.send(id, idleresponse, turtleProtocol)
+            rednet.send(id2, idleresponse, turtleProtocol)
         end
     until (received == true)
     print ("\nCoordinates received...")

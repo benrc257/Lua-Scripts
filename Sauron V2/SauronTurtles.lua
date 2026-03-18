@@ -28,7 +28,7 @@ local miningjobs = 0
 repeat
     newTurtles, newTurtlesIdle = func.updateTurtles(turtleProtocol, turtles, turtlesIdle)
 
-    if #turtleJobs ~= #turtles then -- realign the jobs list with turtles list
+    if #newTurtles ~= #turtles then -- realign the jobs list with turtles list
         for i=1, #turtles do
             for j=1, #newTurtles do
                 if turtles[i] == newTurtles[j] then
@@ -44,8 +44,8 @@ repeat
     
     -- checking for idle turtles without jobs
     rednet.broadcast(broadcasted, turtleProtocol)
+    local id, message = nil
     repeat -- assigns each of the turtles jobs
-        local id, message = nil
         id, message = rednet.receive(turtleProtocol, 2)
         if message == responded then
            

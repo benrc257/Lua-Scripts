@@ -8,7 +8,7 @@ end
 local function rednetInitTurtle()  -- Opens rednet on the computer and returns the modem peripheral
     print("\nAttempting to find modems...")
     repeat -- repeatedly search for modems and open rednet until both are complete
-        local modems = peripheral.find("modem", rednet.open)
+        local modems = {peripheral.find("modem", rednet.open)}
     until (rednet.isOpen())
     print("\nWireless modem found, rednet opened.")
 
@@ -37,9 +37,9 @@ local function detectTurtle(direction) -- prevents the bot from mining another t
 
         -- detects the direction
         if direction == "forward" then
-            present, block = turtle.inspectForward()
-        elseif direction == "down" then
             present, block = turtle.inspect()
+        elseif direction == "down" then
+            present, block = turtle.inspectDown()
         elseif direction == "up" then
             present, block = turtle.inspectUp()
         end
@@ -98,10 +98,11 @@ local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) 
                 -- should look like message[1] = dockingRequest, message[2] = supply or tanker, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
 
                 -- docking
-                local dockedmodem = peripheral.find("modem")
+                local dockedmodem = {peripheral.find("modem")}
                 for i=1, #dockedmodem do -- find the wired modem
-                    if dockedmodem[i].isWireless() == true then
+                    if dockedmodem[i].isWireless() == false then
                         dockedmodem = dockedmodem[i]
+                        break
                     end
                 end
 
@@ -109,7 +110,7 @@ local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) 
                 local nameLocal = dockedmodem.getNameLocal()
                 local dockingmessage = {dockingRequest, "tanker", nameLocal}
                 local askForFuel = false
-                if ((turtle.getItemDetail(1)).count <= 1) then
+                if ((turtle.getItemCount(1)) <= 1) then
                     askForFuel = true
                 end
                 table.insert(dockingmessage,askForFuel)
@@ -117,19 +118,18 @@ local function tankerRefuel(coords, startingCoords, maxheight, centralComputer) 
                 -- find docking computer
                 local dockingID = nil
                 repeat -- find supply computer id
-                    tankerID = rednet.lookup(dockProtocol, centralComputer)
+                    dockingID = rednet.lookup(dockProtocol, centralComputer)
                     os.sleep(0.05)
                 until (dockingID ~= nil)
 
                 -- send and wait
+                print("\nDocking request sent")
                 rednet.send(dockingID, dockingmessage, dockProtocol)
+                local id, message = nil, nil
                 repeat -- repeats until docking is complete
-                    local received = false
-                    local id, message = rednet.receive(dockProtocol, 2)
-                    if message == doneDocking then -- coordinates received {"...", {x1,y1,z1}, maxheight}
-                        received = true
-                    end
-                until (received == true)
+                    id, message = rednet.receive(dockProtocol, 2)
+                until message == doneDocking
+                id, message = nil, nil
             end
         end
         turtle.refuel(63)
@@ -147,8 +147,9 @@ local function dropOff(needsSupply, centralComputer) -- function waits for suppl
     repeat
         supplyID = rednet.lookup(supplierProtocol, centralComputer)
         os.sleep(0.05)
-    until (supplyID)
-    rednet.send(supplyID, message, protocol)
+    until (supplyID ~= nil)
+    rednet.send(supplyID, message, supplierProtocol)
+    message = nil
 
     repeat
         local success = false
@@ -166,29 +167,29 @@ end
 
 local function turnR(facing) -- 1 = north, 2 = east, 3 = south, 4 = west, turns right
     turtle.turnRight()
-    if (facing == 1) then facing = 4 else facing = facing-1 end
+    if (facing == 4) then facing = 1 else facing = facing+1 end
     return facing
 end
 
 local function turnL(facing) -- 1 = north, 2 = east, 3 = south, 4 = west, turns left
     turtle.turnLeft()
-    if (facing == 4) then facing = 1 else facing = facing+1 end
+    if (facing == 1) then facing = 4 else facing = facing-1 end
     return facing
 end
 
 local function face(facing, direction) -- direction is an int
     if (direction ~= facing) then 
-        if ((facing-direction) == 3) then
-            facing = turnL(facing)
-        elseif ((facing-direction) == -3) then
+        if (facing == 4 and direction == 1) then
             facing = turnR(facing)
+        elseif (facing == 1 and direction == 4) then
+            facing = turnL(facing)
         elseif (direction > facing) then
             repeat 
-                facing = turnL(facing)
+                facing = turnR(facing)
             until (direction == facing)
         else
             repeat 
-                facing = turnR(facing)
+                facing = turnL(facing)
             until (direction == facing)
         end
     end
@@ -217,6 +218,7 @@ local function forwardTransport(coords, facing) -- moves forward with protection
     -- move
     repeat func.detectTurtle("forward") turtle.dig() until turtle.forward()
 
+    -- north = -z, south = +z, west = -x, east = +x 
     -- 1 = north, 2 = east, 3 = south, 4 = west
     --update coords
     if (facing == 1) then
@@ -287,11 +289,11 @@ local function getFacing() -- direction is an int
     local facing = 0
 
     -- get original position
-    local x1, y1, z1 = triangulate()
+    local x1, y1, z1 = func.triangulate()
 
     -- move forward, get new position
-    func.forwardTransport({x=0,y=0,z=0}, 1)
-    local x2, y2, z2 = triangulate()
+    repeat func.detectTurtle("forward") turtle.dig() until turtle.forward()
+    local x2, y2, z2 = func.triangulate()
     turtle.back()
 
     -- north = -z, south = +z, west = -x, east = +x 
@@ -300,15 +302,15 @@ local function getFacing() -- direction is an int
     -- finding facing
     if (x1 ~= x2) then
 
-        if (x2 > x1) then -- east
+        if (x1 < x2) then -- east
             facing = 2 
-        else -- if (x2 < x1) then, west
+        else -- if (x1 > x2) then, west
             facing = 4
         end
 
     else -- if (z1 ~= z2) then
 
-        if (z2 > z1) then -- south
+        if (z1 < z2) then -- south
             facing = 3
         else -- if (z2 < z1) then, north
             facing = 1
@@ -341,7 +343,7 @@ end
 local function rednetInit(label)  -- Opens rednet on the computer and returns the modem peripheral
     print("\nAttempting to find modems...")
     repeat -- repeatedly search for modems and open rednet until both are complete
-        local modems = peripheral.find("modem", rednet.open)
+        local modems = {peripheral.find("modem", rednet.open)}
     until (#modems > 0 and rednet.isOpen())
     print("\nWireless modem found, rednet opened.")
     os.setComputerLabel(label)
@@ -359,7 +361,7 @@ local function monitorInit() -- Sets up monitor and readies it for use
 
     --finding monitor
     print("\nCreating monitor interface...")
-    local monitor = peripheral.find("monitor")
+    local monitor = {peripheral.find("monitor")}
     local monitor = monitor[#monitor]
 
     --settings
@@ -409,9 +411,9 @@ local function matchID(table, id, startingIndex) -- finds id in table1 starting 
 end
 
 local function isFull(needsSupply, centralComputer) 
-    local details = turtle.getItemDetail(16)
+    local details = turtle.getItemCount(16)
 
-    if (details ~= nil) then
+    if (details > 0) then
         func.dropOff(needsSupply, centralComputer)
     end
 end
@@ -460,7 +462,7 @@ local function goTo(coords, coordsC1, maxheight, needsSupply, centralComputer) -
     end
 
     -- descend
-    while (coords.y > cordsC1.y) do
+    while (coords.y > coordsC1.y) do
         func.downTransport(coords)
     end
 
@@ -511,7 +513,7 @@ local function tankerGoTo(coords, coordsC1, maxheight, needsSupply, centralCompu
     end
 
     -- descend
-    while (coords.y > cordsC1.y) do
+    while (coords.y > coordsC1.y) do
         func.downTransport(coords)
     end
 
@@ -543,7 +545,7 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
             --face south
             facing = func.face(facing, 3)
             if (length > 1) then --if not the first or last line, move into the next line
-                facing = func.forward(coords, facing)
+                func.forward(coords, facing)
             end
 
             -- face the direction that needs to be mined next
@@ -558,7 +560,7 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
 
             for width=2, widthZ do --for each block after the first
                 func.fillLiquid()
-                func.forward()
+                func.forward(coords, facing)
             end
         end
         
