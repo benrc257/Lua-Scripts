@@ -72,15 +72,14 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
 
     -- checking pings
     local pingIDs = {}
-    local id, message = nil, nil
     repeat -- receive pings and add them to the list
-        id, message = nil, nil
-        id, message = rednet.receive(turtleProtocol, 2)
-        if (id ~= nil and message == idleresponse) then -- if idle message was received add it to the list
-            table.insert(pingIDs, id)
+        os.sleep(1)
+        if (idlerid[idlemessageindex]) then -- if idle message was received add it to the list
+            table.insert(pingIDs, idlerid[messageindex])
+            idlemessageindex = idlemessageindex+1
+            break
         end
-
-    until id == nil
+    until idlerid[idlemessageindex] == nil
     id, message = nil, nil
 
     -- update idle turtle status

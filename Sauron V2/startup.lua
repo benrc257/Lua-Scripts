@@ -14,6 +14,7 @@ turtleJobs = {} -- 1 - miner, 2 - tanker, 3 - supplier
 chunkSize = 16 -- size of mined chunks
 chunksComplete = 1 -- chunks left
 maxheight = nil
+idlemessageindex = 1
 local filename = "operations.txt" -- used for save file
 local x1, x2, y1, y2, z1, z2 = nil -- used for initial coordinates
 local lastchunk = nil -- used for last chunk completed in file
@@ -35,10 +36,18 @@ supplierProtocol = "sauronSuppliers"
 dockProtocol = "sauronDocking"
 needsSupply = "needSupply" -- send from turtles for supply
 needsFuel = "needFuel" -- send from turtles for fuel
+needsJob = "needjob" -- send from turtles for job
 dockingRequest = "needDocking" -- send from turtles for docking
 doneDocking = "doneDocking" -- send from docking computer to end docking
 idlecheck = "idlecheck"
 idleresponse = "idle"
+
+-- global rednet receiver variables
+dockrid, dockrmessage = {}, {}
+supplyrid, supplyrmessage = {}, {}
+tankrid, tankrmessage = {}, {}
+idlerid, idlermessage = {}, {}
+turtlesrid, turtlesrmessage = {}, {}
 
 -- name tab
 multishell.setTitle(multishell.getCurrent(), "SauronMain")
@@ -69,21 +78,21 @@ if (previousOperation == false) then -- if no previous operation found, request 
     repeat
         print("\nNo previous operation found. Requesting coordinates...")
         print("\nEnter the first X coordinate: ")
-        x1 = read()
+        x1 = tonumber(read())
         print("\nEnter the first Y coordinate: ")
-        y1 = read()
+        y1 = tonumber(read())
         print("\nEnter the first Z coordinate: ")
-        z1 = read()
+        z1 = tonumber(read())
         print("\nEnter the second X coordinate: ")
-        x2 = read()
+        x2 = tonumber(read())
         print("\nEnter the second Y coordinate: ")
-        y2 = read()
+        y2 = tonumber(read())
         print("\nEnter the second Z coordinate: ")
-        z2 = read()
+        z2 = tonumber(read())
         print("\nEnter the max safe height: ")
-        maxheight = read()
+        maxheight = tonumber(read())
         print("\nEnter the max partition (chunk) size: ")
-        chunkSize = read()
+        chunkSize = tonumber(read())
         print("\nContinue? (Y/N)")
         local confirm = read()
     until (confirm == "y" or confirm == "Y")
@@ -113,10 +122,10 @@ else -- if previous operation found, read from file and find last chunk complete
     until (lastline[#lastline] == nil)
 
     
-    if (lastline[1] == nil or lastline[2] == nil) then -- check if lastchunk wasn't there
-        lastchunk = nil
+    if (lastline[1] == nil) then -- check if last chunk wasn't there
+        -- do nothing
     else -- otherwise record last chunk
-        lastchunk = {lastline[(#lastline) - 2], lastline[(#lastline) - 1]}
+        chunksComplete = tonumber(lastline[(#lastline)-1])
     end
 
 end
@@ -145,6 +154,9 @@ if (width%chunkSize == 0) then
 else
     chunkWidth = math.ceil(width/chunkSize)+1;
 end
+
+print("\nChunkLength: " .. chunkLength)
+print("\nChunkWidth: " .. chunkWidth)
 
 -- calculate total number of chunks
 local chunks = chunkLength*chunkWidth;
@@ -198,6 +210,8 @@ else
             corners[chunksPartioned] = {}
             corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
             corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+            print("\nCorner1: ", corner1X,corner1Y,corner1Z)
+            print("\nCorner2: ", corner2X,corner2Y,corner2Z)
         end
 
         -- edge chunks
@@ -212,10 +226,11 @@ else
         corners[chunksPartioned] = {}
         corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
         corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
-
+        print("\nCorner1: ", corner1X,corner1Y,corner1Z)
+        print("\nCorner2: ", corner2X,corner2Y,corner2Z)
     end
 
-    for i=1, chunkLength do -- edge chunks
+    for i=chunkLength, chunkLength do -- edge chunks
         corner1X = originX+((i-1)*chunkSize)
         if (length%chunkSize) > 0 then
             corner2X = originX+((i-1)*chunkSize)+((length%chunkSize)-1)
@@ -233,6 +248,8 @@ else
             corners[chunksPartioned] = {}
             corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
             corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
+            print("\nCorner1: ", corner1X,corner1Y,corner1Z)
+            print("\nCorner2: ", corner2X,corner2Y,corner2Z)
         end
 
         -- edge chunks
@@ -248,7 +265,8 @@ else
         corners[chunksPartioned] = {}
         corners[chunksPartioned][1] = {corner1X,corner1Y,corner1Z} -- starting corner is accessed at index 1
         corners[chunksPartioned][2] = {corner2X,corner2Y,corner2Z} -- ending corner is accessed at index 2
-
+        print("\nCorner1: ", corner1X,corner1Y,corner1Z)
+        print("\nCorner2: ", corner2X,corner2Y,corner2Z)
     end
 end
 
@@ -265,25 +283,27 @@ term.redirect(old)
 multishell.launch(_ENV,"SauronTank.lua") -- contacts tankers
 multishell.launch(_ENV,"SauronSupply.lua") -- contacts suppliers
 multishell.launch(_ENV,"SauronTurtles.lua") -- updates turtle list
-os.sleep(5)
 multishell.launch(_ENV,"SauronDock.lua") -- docks turtles
+multishell.launch(_ENV,"SauronReceiver.lua") -- docks turtles
 
-os.sleep(10)
+os.sleep(5)
 
 repeat
 
     local free = 0
     repeat -- find a free miner
-        for minerIndex=1, #turtleJobs do
-            minerIndex = func.matchID(turtleJobs, 1, minerIndex)
+        local minerindex = 0
+        for i=1, #turtleJobs do
+            minerIndex = func.matchID(turtleJobs, 1, i)
             print("\nSearching for miner at id " .. minerIndex)
             if minerIndex ~= 0 and turtlesIdle[minerIndex] == true then
                 print("\nFree miner found at index" .. minerIndex)
                 free = minerIndex
                 break
             end
+            os.sleep(0.1)
         end
-        os.sleep(3)
+        os.sleep(0.1)
     until free ~= 0
 
 
@@ -303,9 +323,9 @@ repeat
     old = term.redirect(monitor)
     paintutils.drawFilledBox((marginW), ((mheight/2)+(mheight*.1)), ((mwidth-marginW)*((chunksComplete/chunks))), ((mheight/2)+(mheight*.3)), colors.red)
     term.redirect(old)
-    chunksComplete = chunksComplete+1
-    file.write(nextCoordinates[1][1] .. "\n" .. nextCoordinates[1][2] .. "\n" .. nextCoordinates[1][3] .. "\n" .. nextCoordinates[2][1] .. "\n" .. nextCoordinates[2][2] .. "\n" .. nextCoordinates[2][3] .. "\n" .. maxheight .. "\n")
+    file.write(chunksComplete .. "\n")
     file.flush()
+    chunksComplete = chunksComplete+1
 until chunksComplete > chunks
 
 repeat -- wait until all turtles are free
@@ -322,7 +342,7 @@ monitor.clearLine()
 monitor.write("Complete!")
 
 -- broadcast completed to turtles
-func.broadcast("completed", turtleProtocol)
+rednet.broadcast("completed", turtleProtocol)
 
 -- update completed flag
 completed = true

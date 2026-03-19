@@ -33,7 +33,7 @@ print("\nDocking request sent")
 rednet.send(dockingID, dockingmessage, dockProtocol)
 local id, message = nil, nil
 repeat -- repeats until docking is complete
-    id, message = rednet.receive(dockProtocol, 2)
+    id, message = rednet.receive(dockProtocol)
 until message == doneDocking
 id, message = nil, nil
 
@@ -46,19 +46,18 @@ repeat
 
     -- wait for message, responding when pinged for idle
     print("\nWaiting for coordinates...")
-    local id2, message2 = nil, nil
     local received = false
     local id, message = nil, nil
+    local messageProtocol = nil
     repeat
-        id, message = rednet.receive(tankerProtocol, 2)
-        id2, message2 = rednet.receive(turtleProtocol, 2)
-        if func.isTable(message) == true then -- coordinates received {"...", {x1,y1,z1}, maxheight}
+        id, message, messageProtocol = rednet.receive()
+        if messageProtocol == tankerProtocol and message == needsFuel then -- coordinates received {"...", {x1,y1,z1}, maxheight}
             received = true
-        elseif message2 == "completed" then -- completed signal sent, skip to end of loop
+        elseif message == "completed" then -- completed signal sent, skip to end of loop
             completed = true
             goto complete
-        elseif message2 == idlecheck then -- respond to idle ping
-            rednet.send(id2, idleresponse, turtleProtocol)
+        elseif message == idlecheck then -- respond to idle ping
+            rednet.send(id, idleresponse, turtleProtocol)
         end
     until (received == true)
     print ("\nCoordinates received...")
@@ -134,7 +133,7 @@ repeat
             rednet.send(dockingID, dockingmessage, dockProtocol)
             local id, message = nil, nil
             repeat -- repeats until docking is complete
-                id, message = rednet.receive(dockProtocol, 2)
+                id, message = rednet.receive(dockProtocol)
             until message == doneDocking
             id, message = nil, nil
         end

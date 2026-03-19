@@ -30,13 +30,8 @@ idleresponse = "idle"
 
 -- rednet opening
 modem, label = func.rednetInitTurtle()
-func.rednetHost(turtleProtocol, label)
-func.rednetHost(protocol, label)
 func.rednetHost(turtleLookupProtocol, label)
-func.rednetHost(miningProtocol, label)
-func.rednetHost(dockProtocol, label)
-func.rednetHost(supplierProtocol, label)
-func.rednetHost(tankerProtocol, label)
+func.rednetHost(turtleProtocol, label)
 
 -- record starting position
 print("\nTriangulating starting position...")
@@ -46,10 +41,10 @@ startingCoords = {x=xstart, y=ystart, z=zstart}
 -- acquire job
 job = nil
 repeat
-    local id, message = rednet.receive(turtleProtocol, 10)
+    local id, message = rednet.receive(turtleProtocol)
     if (message == jobSearch) then
         rednet.send(id, needsJob, turtleProtocol)
-        id, message = rednet.receive(turtleProtocol, 20)
+        id, message = rednet.receive(turtleProtocol)
         if (message == minerJob or message == tankerJob or message == supplierJob) then
             job = message
         end

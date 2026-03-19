@@ -12,27 +12,28 @@ multishell.setTitle(multishell.getCurrent(), "SauronDock")
 -- should look like message[1] = dockingRequest, message[2] = supply or tanker or miner, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
 
 -- refueling handling
+local messageindex = 0
 repeat
 
-    local id, message = nil
+    messageindex = messageindex+1
     repeat -- wait for a docking request
         print("\nAwaiting docking request...")
-        id, message = rednet.receive(dockProtocol, 10)
-    until (func.isTable(message) == true and message[1] == dockingRequest)
+        os.sleep(0.5)
+    until (dockrid[messageindex] ~= nil)
 
     -- gets the peripheral name for the docked turtle
     print("\nDocking request received")
-    local turtlePeripheral = message[3]
+    local turtlePeripheral = dockrmessage[messageindex][3]
     local inventorySize = 16
     local fuelInventory = fuelchest.size()
 
-    if message[2] == "supply" then -- if supply docking mode, extract all items from the turtle
+    if dockrmessage[messageindex][2] == "supply" then -- if supply docking mode, extract all items from the turtle
 
         for i=2, inventorySize do -- for each slot, remove all items, waiting if the items aren't able to be moved
             local itemsMoved = supplychest.pullItems(turtlePeripheral, i)
         end
         
-        if message[4] == true then -- if supplier needs fuel
+        if dockrmessage[messageindex][4] == true then -- if supplier needs fuel
                 
             local fuelItems = fuelchest.list()
             for slot, item in pairs(fuelItems) do -- used to only pull from slots with items
@@ -44,7 +45,7 @@ repeat
 
         end
 
-    elseif message[2] == "tanker" then
+    elseif dockrmessage[messageindex][2] == "tanker" then
 
         for i=1, inventorySize do -- fills every slot with fuel
             local fuelItems = fuelchest.list()
@@ -56,9 +57,9 @@ repeat
             end
         end
 
-    elseif message[2] == "miner" then
+    elseif dockrmessage[messageindex][2] == "miner" then
 
-        if message[4] == true then -- if miner needs fuel
+        if dockrmessage[messageindex][4] == true then -- if miner needs fuel
                 
             local fuelItems = fuelchest.list()
             for slot, item in pairs(fuelItems) do -- used to only pull from slots with items
@@ -71,8 +72,8 @@ repeat
 
     end
 
-    print("\nDocking complete, sent to " .. id)
-    rednet.send(id, doneDocking, dockProtocol)
-    turtlesIdle[func.matchID(turtles,id,1)] = true
+    print("\nDocking complete, sent to " .. dockrid[messageindex])
+    rednet.send(dockrid[messageindex], doneDocking, dockProtocol)
+    turtlesIdle[func.matchID(turtles,dockrid[messageindex],1)] = true
 
 until completed == true

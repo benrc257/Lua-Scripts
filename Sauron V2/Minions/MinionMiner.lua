@@ -40,7 +40,7 @@ print("\nDocking request sent")
 rednet.send(dockingID, dockingmessage, dockProtocol)
 local id, message = nil, nil
 repeat -- repeats until docking is complete
-    id, message = rednet.receive(dockProtocol, 2)
+    id, message = rednet.receive(dockProtocol)
 until message == doneDocking
 id, message = nil, nil
 
@@ -55,19 +55,18 @@ repeat
 
     -- wait for message, responding when pinged for idle
     print("\nWaiting for coordinates...")
-    local id2, message2 = nil, nil
     local id, message = nil, nil
     local received = false
+    local messageProtocol = nil
     repeat
-        id, message = rednet.receive(miningProtocol, 5)
-        id2, message2 = rednet.receive(turtleProtocol, 1)
-        if message ~= nil then -- coordinates received {{x1,y1,z1},{x2,y2,z2},maxheight}
+        id, message, messageProtocol = rednet.receive()
+        if messageProtocol == miningProtocol then -- coordinates received {"...", {x1,y1,z1}, maxheight}
             received = true
-        elseif message2 == "completed" then -- completed signal sent, skip to end of loop
+        elseif message == "completed" then -- completed signal sent, skip to end of loop
             completed = true
             goto complete
-        elseif message2 == idlecheck then
-            rednet.send(id2, idleresponse, turtleProtocol)
+        elseif message == idlecheck then -- respond to idle ping
+            rednet.send(id, idleresponse, turtleProtocol)
         end
     until (received == true)
     print ("\nCoordinates received...")
@@ -78,9 +77,8 @@ repeat
 
     facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer) 
     func.mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer) -- (coords, coordsC1, coordsC2, maxheight, facing, needsFuel, needsSupply, centralComputer)
-    facing = func.goTo(coords, coordsC1, maxheight, needsFuel, centralComputer)
     
 until (completed == true)
 ::complete::
 -- return home
-func.goTo(coords, startingCoords, maxheight, needsFuel, centralComputer)
+facing = func.goTo(coords, startingCoords, maxheight, needsFuel, centralComputer)

@@ -33,37 +33,40 @@ until (supplychest ~= false)
 
 
 -- refueling handling
+local messageindex = 0
 repeat
 
-    local id, message = nil, nil
+    messageindex = messageindex+1
     repeat -- wait for a fuel request
         print("\nWaiting for supply requests...")
-        id, message = rednet.receive(supplierProtocol, 10)
-    until (message ~= nil and func.isTable(message) == true)
+        os.sleep(0.5)
+    until (supplyrid[messageindex] ~= nil)
 
     print("\nCoordinates received.")
 
     local free = 0
-    repeat -- find a free supplier
-        for supplierIndex=1, #turtleJobs do
-            supplierIndex = func.matchID(turtleJobs, 1, supplierIndex)
-            print("\nSearching for supplier at id " .. supplierIndex)
-            if supplierIndex ~= 0 and turtlesIdle[supplierIndex] == true then
-                print("\nFree supplier found at index" .. supplierIndex)
-                free = supplierIndex
+    repeat -- find a free miner
+        local minerIndex = 0
+        for i=1, #turtleJobs do
+            minerIndex = func.matchID(turtleJobs, 3, i)
+            print("\nSearching for miner at id " .. minerIndex)
+            if minerIndex ~= 0 and turtlesIdle[minerIndex] == true then
+                print("\nFree miner found at index" .. minerIndex)
+                free = minerIndex
                 break
             end
+            os.sleep(0.1)
         end
-        os.sleep(2)
+        os.sleep(0.1)
     until free ~= 0
 
 
-    table.insert(message,maxheight)
+    table.insert(supplyrmessage[messageindex],maxheight)
     local supplierID = turtles[free]
     turtlesIdle[free] = false
 
     -- contact tankers with coordinates
-    rednet.send(supplierID, message, supplierProtocol)
+    rednet.send(supplierID, supplyrmessage[messageindex], supplierProtocol)
     
 
 until (completed == true)

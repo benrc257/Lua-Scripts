@@ -56,9 +56,10 @@ end
 
 local function refuel(needsFuel, centralComputer) -- requests then waits for refuel
     if (turtle.getFuelLevel() <= 1250) then -- if fuel level low, refuel
-
+        print("\nRefueling...")
         turtle.select(1)
-        if (turtle.getItemCount() ~= 64) then -- if no fuel, request fuel
+        if (turtle.getItemCount(1) ~= 64) then -- if no fuel, request fuel
+            print("\nRequesting fuel...")
             local message = {}
             message[1] = needsFuel
             local x, y, z = func.triangulate()
@@ -71,19 +72,24 @@ local function refuel(needsFuel, centralComputer) -- requests then waits for ref
             until (tankerID)
             rednet.send(tankerID, message, tankerProtocol)
 
+            print("\nWaiting for fuel...")
             repeat -- wait for fuel
                 os.sleep(1)
             until (turtle.getItemCount(1) == 64)
-
+            print("\nFirst batch received.")
             turtle.refuel(63) -- refuel
-
+            
             repeat -- wait for more fuel
                 local present, block = turtle.inspectUp()
                 if (present == false) then break end
             until (turtle.getItemCount(1) == 64)
-
+            print("\nSecond batch received.")
+        else
+            turtle.refuel(63) -- refuel
         end
+        print("\nRefueled Successfully")
     end
+    
 end
 
 local function tankerRefuel(coords, maxheight, centralComputer) -- tanker returns to docking instead of manually refueling
@@ -91,9 +97,9 @@ local function tankerRefuel(coords, maxheight, centralComputer) -- tanker return
     if (turtle.getFuelLevel() <= 1250) then -- if fuel level low, refuel
         refueled = true
         turtle.select(1)
-        if (turtle.getItemCount() ~= 64) then -- if no fuel, request fuel
+        if (turtle.getItemCount(1) ~= 64) then -- if no fuel, request fuel
             turtle.select(16)
-            if (turtle.getItemCount() ~= 64) then
+            if (turtle.getItemCount(16) ~= 64) then
                 facing = func.tankerGoTo(coords, maxheight, nil, centralComputer)
 
                 -- note for minions: they will need to attach to a modem bay and then use modem.getNameLocal(), then transmit that name via rednet to this computer so it can send fuel.
@@ -129,12 +135,17 @@ local function tankerRefuel(coords, maxheight, centralComputer) -- tanker return
                 rednet.send(dockingID, dockingmessage, dockProtocol)
                 local id, message = nil, nil
                 repeat -- repeats until docking is complete
-                    id, message = rednet.receive(dockProtocol, 2)
+                    id, message = rednet.receive(dockProtocol)
                 until message == doneDocking
                 id, message = nil, nil
+            else 
+                turtle.refuel(63)
             end
+            
+        else
+            turtle.refuel(63)
         end
-        turtle.refuel(63)
+        
     end
     return refueled
 end
@@ -182,16 +193,16 @@ end
 local function face(facing, direction) -- direction is an int
     if (direction ~= facing) then 
         if (facing == 4 and direction == 1) then
-            facing = turnR(facing)
+            facing = func.turnR(facing)
         elseif (facing == 1 and direction == 4) then
-            facing = turnL(facing)
+            facing = func.turnL(facing)
         elseif (direction > facing) then
             repeat 
-                facing = turnR(facing)
+                facing = func.turnR(facing)
             until (direction == facing)
         else
             repeat 
-                facing = turnL(facing)
+                facing = func.turnL(facing)
             until (direction == facing)
         end
     end
@@ -532,7 +543,7 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
 
 
     -- start mining
-    for depth=1, depthY do -- for each layer
+    for k=1, depthY do -- for each layer
         -- prepping
         func.refuel(needsFuel, centralComputer)
         
@@ -544,8 +555,13 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
             -- check inventory each line
             func.isFull(needsSupply, centralComputer)
 
-            --face south
-            facing = func.face(facing, 3)
+            --face north or south
+            if (k%2 == 1) then
+                facing = func.face(facing, 3)
+            else
+                facing = func.face(facing, 1)
+            end
+
             if (i > 1) then --if not the first or last line, move into the next line
                 func.forward(coords, facing)
             end
@@ -560,10 +576,11 @@ local function mine(coords, coordsC1, coordsC2, maxheight, facing, needsFuel, ne
             -- fill any liquid in the first spot
             func.fillLiquid()
 
-            for width=2, widthZ do --for each block after the first
+            for j=2, widthZ do --for each block after the first
                 func.fillLiquid()
                 func.forward(coords, facing)
             end
+
         end
         
     end
