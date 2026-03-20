@@ -53,7 +53,7 @@ repeat
     local messageProtocol = nil
     repeat
         id, message, messageProtocol = rednet.receive()
-        if messageProtocol == supplierProtocol and message == needsSupply then -- coordinates received {"...", {x1,y1,z1}, maxheight}
+        if messageProtocol == supplierProtocol and message[1] == needsSupply then -- coordinates received {"...", {x1,y1,z1}, maxheight}
             received = true
         elseif message == "completed" then -- completed signal sent, skip to end of loop
             completed = true
@@ -79,6 +79,7 @@ repeat
     -- should look like message[1] = dockingRequest, message[2] = supply or tanker, message[3] = modem.getNameLocal(), message[4] = true or false (for refueling)
 
     -- docking
+    os.sleep(7)
     dockedmodem = {peripheral.find("modem")}
     for i=1, #dockedmodem do -- find the wired modem
         if dockedmodem[i].isWireless() == false then

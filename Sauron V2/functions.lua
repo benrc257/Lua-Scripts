@@ -75,7 +75,7 @@ local function updateTurtles(turtleProtocol, turtles, turtlesIdle) -- searches f
     repeat -- receive pings and add them to the list
         os.sleep(1)
         if (idlerid[idlemessageindex]) then -- if idle message was received add it to the list
-            table.insert(pingIDs, idlerid[messageindex])
+            table.insert(pingIDs, idlerid[idlemessageindex])
             idlemessageindex = idlemessageindex+1
             break
         end
